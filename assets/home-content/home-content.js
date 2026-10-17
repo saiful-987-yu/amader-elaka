@@ -49,16 +49,7 @@
 */
 window.HOME_NOTICES = [
   {
-    titleEn: "We have a new app",
-    titleBn: "আমাদের নতুন অ্যাপ এসেছে",
-    textEn: "If you installed the old \"Amader Drivers\" app, please delete it and install the new \"Amader Elaka\" app from this site.",
-    textBn: "আপনি আগে \"আমাদের ড্রাইভার\" অ্যাপ ইনস্টল করে থাকলে সেটি মুছে এই সাইট থেকে নতুন \"আমাদের এলাকা\" অ্যাপ ইনস্টল করে নিন।",
-    date: "",
-    urgent: false,
-    link: ""
-  },
-  {
-    titleEn: "Welcome to Amader Area",
+    titleEn: "Welcome to Amader Elaka (a New App)",
     titleBn: "আমাদের এলাকায় স্বাগতম",
     textEn: "Drivers, doctors and more of your area are being added step by step. Check back often.",
     textBn: "আপনার এলাকার ড্রাইভার, ডাক্তারসহ আরও অনেক তথ্য ধাপে ধাপে যুক্ত হচ্ছে। নিয়মিত দেখুন।",

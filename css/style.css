@@ -1,0 +1,2594 @@
+/* ============================================================
+   style.css — base, layout and components (mobile-first).
+   Breakpoint overrides live in responsive.css.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--duration-base) var(--ease), color var(--duration-base) var(--ease);
+}
+
+h1, h2, h3, h4 { line-height: var(--line-height-tight); margin: 0; font-weight: 600; }
+p { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+img { max-width: 100%; display: block; }
+button { font-family: inherit; }
+
+a { color: var(--color-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  /* Comfortable, responsive side padding — scales from 8px on small
+     phones up to 16px on larger screens, on every section that uses it. */
+  padding: 0 clamp(8px, 2vw, 16px);
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  z-index: 200;
+}
+.skip-link:focus {
+  left: var(--space-3);
+  top: var(--space-3);
+}
+
+/* ------------------------------------------------------------
+   HEADER
+   ------------------------------------------------------------ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.site-header__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--header-height);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: calc(var(--font-size-lg) - 1.5px);
+  color: var(--color-ink);
+  margin-right: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand:hover { text-decoration: none; }
+
+.brand__mark {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.brand__mark svg { width: 20px; height: 20px; }
+
+.nav-primary {
+  display: none;
+  align-items: center;
+  gap: var(--space-5);
+}
+.nav-primary a {
+  color: var(--color-ink-soft);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+.nav-primary a.is-current { color: var(--color-primary); }
+.nav-primary a:hover { text-decoration: none; color: var(--color-primary); }
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon-btn {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--color-primary-soft); }
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn svg { width: 20px; height: 20px; }
+
+.lang-toggle {
+  display: flex;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.lang-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.lang-toggle button.is-active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.menu-toggle { display: inline-flex; }
+
+/* Floating "popup" panel — visually separated from the header and from
+   the page edges (not full-width/edge-to-edge anymore), with a small
+   speech-bubble tail pointing up at the hamburger button that opened
+   it, so it reads as its own popup rather than blending into the page. */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: calc(var(--header-height) + var(--space-3));
+  left: var(--space-4);
+  right: var(--space-4);
+  z-index: 65;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+}
+.mobile-nav.is-open { display: block; animation: mobile-nav-in var(--duration-base) var(--ease); }
+@keyframes mobile-nav-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* The tail: a small rotated square, half tucked behind the card's own
+   top edge, sharing the card's background + border so the two visible
+   edges line up seamlessly into one triangular point. Positioned near
+   the card's right side, roughly under the hamburger button. */
+.mobile-nav::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 22px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-surface-raised);
+  border-left: 1px solid var(--color-line);
+  border-top: 1px solid var(--color-line);
+  border-radius: 2px 0 0 0;
+  transform: rotate(45deg);
+}
+.mobile-nav ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  max-height: calc(100vh - var(--header-height) - (var(--space-3) * 2));
+  overflow-y: auto;
+}
+.mobile-nav__full { grid-column: 1 / -1; }
+.mobile-nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: var(--color-ink);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line);
+}
+.mobile-nav a:hover { background: var(--color-primary-soft); text-decoration: none; }
+.mobile-nav__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+.mobile-nav__icon svg { width: 20px; height: 20px; }
+.mobile-nav__avatar {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--color-primary-soft);
+}
+.mobile-nav__avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-primary);
+}
+.mobile-nav__avatar-fallback svg { width: 16px; height: 16px; }
+.mobile-nav__avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------
+   BUTTONS
+   ------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+  transition: transform var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+/* Every button icon (phone, WhatsApp, etc.) gets a consistent, clearly
+   visible size — without this, an icon with no explicit CSS size can
+   render oversized and get clipped inside a compact button. */
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+.btn--primary { background: var(--color-primary); color: var(--color-on-primary); }
+.btn--primary:hover { background: var(--color-primary-dark); }
+
+.btn--accent { background: var(--color-accent); color: var(--color-on-accent); }
+.btn--accent:hover { background: var(--color-accent-dark); }
+
+.btn--ghost { background: transparent; color: var(--color-primary); border: 1px solid var(--color-line-strong); }
+.btn--ghost:hover { background: var(--color-primary-soft); }
+
+.btn--danger { background: var(--color-danger); color: #fff; }
+
+.btn--block { width: 100%; }
+.btn--sm { min-height: 40px; padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); }
+
+/* ------------------------------------------------------------
+   HERO / TEXT SECTION — sits between the Main Header and the Main
+   Banner, and only ever holds this automatic text (never the banner).
+   ------------------------------------------------------------ */
+.hero--compact {
+  min-height: calc(var(--header-height) * 1.5);
+  padding: var(--space-3) 0;
+  background: linear-gradient(180deg, var(--color-primary-soft), var(--color-bg) 85%);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero__inner { max-width: 640px; margin: 0 auto; }
+.hero__heading {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  margin: 0 0 4px;
+}
+.hero__tagline {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  margin: 0;
+  /* Max 2 lines even on very small screens — never pushes the banner down. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------
+   HOMEPAGE BANNER — 3 slides, 2:1, auto-advance + swipe
+   ------------------------------------------------------------ */
+.banner { padding: var(--space-4) 0; }
+.banner__viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-primary-soft);
+  touch-action: pan-y;
+}
+.banner__track {
+  display: flex;
+  width: 300%;
+  height: 100%;
+  transition: transform 380ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.banner__slide {
+  width: 33.3333%;
+  height: 100%;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.banner__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Slide 1's dynamic text — same solid background as the Doctor/
+   Registration sections' .cta-band by default; a loaded
+   home-banner-01.jpg is layered on top of it inline (see buildSlide()
+   in drivers.js), never replacing the background-color outright, so a
+   missing/broken image just leaves this solid colour showing. */
+.banner__slide--text {
+  background-color: var(--color-primary-dark);
+  background-size: cover;
+  background-position: center;
+  text-align: center;
+  padding: var(--space-3) var(--space-5);
+}
+.banner__slide-text { display: flex; flex-direction: column; gap: var(--space-2); }
+.banner__slide--text h2 { color: #fff; font-size: var(--font-size-lg); font-weight: 700; margin: 0; }
+.banner__slide-sub { color: rgba(255,255,255,0.9); font-size: var(--font-size-sm); font-weight: 400; max-width: 34ch; margin: 0 auto; }
+.banner__slide--placeholder {
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-primary-dark);
+}
+.banner__slide--placeholder svg { width: 40px; height: 40px; }
+.banner__dots { display: flex; justify-content: center; gap: var(--space-2); margin-top: var(--space-3); }
+.banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-line-strong);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: width var(--duration-base) var(--ease), background var(--duration-base) var(--ease);
+}
+.banner__dot.is-active { background: var(--color-primary); width: 20px; }
+
+/* Slides built from several sources (GIF→JPG chain, video + fallback picture). */
+.banner__slide--blank { background: var(--color-primary-soft); }
+.banner__fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: var(--space-2); }
+.banner__video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+.banner__video.is-playing { opacity: 1; }
+.banner__video iframe {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  transform: translateY(-50%);
+  border: 0;
+  pointer-events: none;
+}
+/* Transparent layer over the video: swipes reach the banner and a tap never opens YouTube or pauses the video. */
+.banner__shield { position: absolute; inset: 0; z-index: 2; }
+.banner__sound {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  z-index: 5;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+}
+.banner__sound.is-visible { display: flex; }
+.banner__sound svg { width: 18px; height: 18px; }
+
+/* Emergency page: 2:1 banner (same shape as the Home banner) sitting BEHIND the
+   breadcrumb / heading / subtitle. It is absolutely positioned inside
+   .banner-zone, so it takes no space and nothing below it (search bar, list)
+   moves. Its bottom edge stays just above the search bar; it grows upward
+   into the empty space under the site header. */
+.banner-zone { position: relative; }
+.banner-zone > .breadcrumb,
+.banner-zone > .section-head { position: relative; z-index: 1; pointer-events: none; }
+.banner-zone .breadcrumb__link,
+.banner-zone .speak-btn { pointer-events: auto; }
+/* Heading + subtitle start where the breadcrumb text starts (list indent 40px + link padding 2px). */
+.banner-zone > .section-head { padding-left: 42px; }
+.banner--emergency {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: calc(-1 * var(--space-2));
+  margin: 0 auto;
+  aspect-ratio: 2 / 1;
+  max-height: calc(100% + var(--space-6) + var(--space-2) - var(--space-1) - var(--zone-lift, 0px));
+  padding: 0;
+  z-index: 0;
+}
+.banner--emergency .banner__viewport { aspect-ratio: auto; height: 100%; }
+.banner--emergency .banner__dots { position: absolute; left: 0; right: 0; bottom: 6px; margin: 0; z-index: 4; }
+/* Standard banner height for every section (Emergency, Doctor, Market, Other and any future one): a zone with short text gets the same height as the Emergency/Doctor zone, so its banner is the same size. Add class "banner-zone--standard" to any new banner-zone. */
+@media (max-width: 479px) {
+  .banner-zone--standard { min-height: 147px; margin-bottom: var(--space-4); }
+}
+@media (min-width: 480px) {
+  .banner--emergency { left: 50%; right: auto; width: 340px; margin: 0; transform: translateX(-50%); }
+}
+@media (min-width: 720px) {
+  .banner--emergency { width: 300px; }
+}
+
+/* Emergency page text over the banner: bright colours with a dark outline,
+   readable on any picture in both Light and Dark theme. */
+.banner-zone .breadcrumb__link,
+.banner-zone .breadcrumb__current,
+.banner-zone .breadcrumb__sep,
+.banner-zone .section-head p { color: #ffffff; }
+.banner-zone .section-head h2,
+.banner-zone .section-head .speak-btn { color: #ffd43b; }
+.banner-zone .section-head .section-head__sort-btn { pointer-events: auto; margin-right: 22px; }
+@media (max-width: 359px) {
+  .banner-zone .section-head .section-head__sort-btn { margin-right: 8px; }
+}
+.banner-zone .breadcrumb,
+.banner-zone .section-head {
+  text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000, 0 0 8px rgba(0, 0, 0, 0.7);
+}
+
+/* ------------------------------------------------------------
+   HOMEPAGE ACTIONS — compact, side-by-side even on small phones
+   ------------------------------------------------------------ */
+.home-actions { padding: var(--space-2) 0 var(--space-2); }
+/* Grid (not flex) so the 60/40 ratio holds exactly even with a gap —
+   flex-basis percentages plus a gap would add up to slightly over 100%. */
+.hero__actions { display: grid; grid-template-columns: 3fr 2fr; gap: var(--space-2); }
+.hero__actions .btn { width: 100%; min-width: 0; }
+.btn--compact {
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  min-height: 44px;
+  white-space: normal;
+  line-height: 1.2;
+}
+.btn--compact svg { width: 16px; height: 16px; }
+
+.btn--emergency { gap: 6px; }
+.emergency-icon {
+  font-size: 1.15em;
+  line-height: 1;
+  /* Stays visually distinct from the red button background and draws
+     a little attention without being distracting or shaking the page. */
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
+  animation: emergency-pulse 1.6s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes emergency-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+/* ------------------------------------------------------------
+   SECTION
+   ------------------------------------------------------------ */
+.section { padding-block: var(--space-6); }
+/* Used only by the Home page's market section, immediately below the
+   Select Your Bazar / Emergency Contact buttons — trims just that one
+   top gap without touching `.section`'s shared top/bottom padding used
+   everywhere else (Markets page, How It Works, Register CTA, etc). */
+.section--flush-top { padding-top: var(--space-3); }
+.section-head { margin-bottom: var(--space-4); }
+.section-head h2 { font-size: var(--font-size-xl); margin-bottom: var(--space-1); }
+.section-head p { color: var(--color-ink-soft); font-size: var(--font-size-sm); }
+
+/* ------------------------------------------------------------
+   BREADCRUMB
+   ------------------------------------------------------------ */
+.breadcrumb {
+  margin-bottom: var(--space-4);
+  /* Allow horizontal scroll of the crumb trail itself on very
+     narrow screens, never the page. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.breadcrumb::-webkit-scrollbar { display: none; }
+
+.breadcrumb__list {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.breadcrumb__link {
+  color: var(--color-ink-soft);
+  text-decoration: none;
+  padding: var(--space-1) 2px;
+}
+.breadcrumb__link:hover { color: var(--color-primary); text-decoration: underline; }
+.breadcrumb__sep { color: var(--color-line-strong); padding: 0 2px; }
+.breadcrumb__current {
+  color: var(--color-ink);
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: bottom;
+}
+.modal-sheet .breadcrumb { margin-bottom: var(--space-3); }
+
+/* ------------------------------------------------------------
+   CHIP GRID (bazars, vehicle types)
+   ------------------------------------------------------------ */
+.chip-grid {
+  display: grid;
+  /* minmax(0, 1fr): columns stay exactly equal — a long name can no longer
+     stretch one column. grid-auto-rows: 1fr: every card gets the height of
+     the tallest one, so all bazar / vehicle cards stay the same size. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--space-3);
+}
+.chip-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-ink);
+  min-height: 108px;
+  transition: border-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+}
+.chip-card:hover { border-color: var(--color-primary); }
+.chip-card:active { transform: scale(0.98); }
+.chip-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chip-card__icon svg { width: 24px; height: 24px; }
+.chip-card__name { display: flex; align-items: center; gap: 4px; width: 100%; font-weight: 600; font-size: var(--font-size-md); }
+/* Long names wrap to at most 2 lines inside the card (card size is fixed
+   by the grid, so a long name never resizes its column). */
+.chip-card__name-text {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.chip-card__sub { font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+
+/* Click-to-speak button — reused for card names and section headings.
+   Deliberately tiny and unpadded so it drops into existing text/line
+   height without adding any extra size to its container. */
+.speak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  opacity: 0.85;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.speak-btn:hover, .speak-btn:active { opacity: 1; }
+.speak-btn svg { width: 18px; height: 18px; }
+.section-head__title-row { display: flex; align-items: center; gap: 6px; }
+.section-head__title-row .speak-btn { width: 24px; height: 24px; }
+.section-head__title-row .speak-btn svg { width: 20px; height: 20px; }
+/* Tiny, deliberately unobtrusive — a single icon, no label — so it
+   doesn't compete visually with the heading itself. */
+.section-head__sort-btn { margin-left: auto; width: 28px; height: 28px; color: var(--color-ink-soft); }
+.section-head__sort-btn svg { width: 18px; height: 18px; }
+
+.market-order-hint { font-size: var(--font-size-sm); color: var(--color-ink-soft); margin-bottom: var(--space-3); }
+.market-order-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 50vh; overflow-y: auto; }
+.market-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+.market-order-row__name { font-weight: 500; }
+.market-order-row__btns { display: flex; gap: var(--space-1); flex-shrink: 0; }
+.market-order-row__btns .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.market-order-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+/* The hero heading keeps its centered text alignment even though it's
+   now a flex row (heading span + speak button). */
+.hero__heading.section-head__title-row { justify-content: center; }
+
+/* Vehicle-category card: existing small icon + new (optional) wider
+   category image sitting beside it, name stays below as before. */
+.chip-card__top { display: flex; align-items: center; gap: var(--space-2); width: 100%; }
+.chip-card__image {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 2 / 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-primary-soft);
+}
+.chip-card__image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Market card with a "Markets BG Image URL" background photo — text/
+   icon are lifted to white so they stay readable over the photo (the
+   dark overlay gradient itself is applied inline, see drivers.js). */
+.chip-card--market-has-bg { background-color: transparent; background-size: cover; background-position: center; border-color: transparent; }
+.chip-card--market-has-bg .chip-card__name { color: #fff; }
+.chip-card--market-has-bg .chip-card__icon { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+/* "Others" tile — same chip shape, centered and visually muted. */
+.chip-card--others { align-items: center; text-align: center; color: var(--color-ink-soft); }
+.chip-card--others .chip-card__icon { background: var(--color-line); color: var(--color-ink-soft); }
+.chip-card--others .chip-card__name { justify-content: center; }
+.chip-collage { display: grid; grid-template-columns: repeat(2, 30px); grid-auto-rows: 30px; gap: 3px; }
+.chip-collage__tile { position: relative; overflow: hidden; border-radius: 6px; background: var(--color-primary-soft); color: var(--color-primary-dark); display: flex; align-items: center; justify-content: center; }
+.chip-collage__icon { display: flex; align-items: center; justify-content: center; }
+.chip-collage__icon svg { width: 16px; height: 16px; }
+.chip-collage__tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.chip-collage__tile--more { background: var(--color-line); color: var(--color-ink-soft); font-size: var(--font-size-xs); font-weight: 700; }
+
+/* Dynamic online-driver-count badge on each vehicle-category card. */
+.chip-card__online {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-soft);
+  margin-top: -4px; /* slightly tighten the gap under the name, per spec */
+}
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex-shrink: 0;
+  animation: online-pulse 1.8s ease-in-out infinite;
+}
+@keyframes online-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
+}
+
+/* ------------------------------------------------------------
+   SEARCH
+   ------------------------------------------------------------ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+}
+.search-bar svg { width: 20px; height: 20px; color: var(--color-ink-soft); flex-shrink: 0; }
+.search-bar input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  width: 100%;
+  min-height: 40px;
+  font-family: inherit;
+}
+.search-bar input::placeholder { color: var(--color-ink-soft); }
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  flex-wrap: wrap;
+}
+.result-count { font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+.toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-ink);
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-pill input { width: 18px; height: 18px; accent-color: var(--color-primary); }
+
+/* ------------------------------------------------------------
+   DRIVER GRID + CARD
+   ------------------------------------------------------------ */
+.driver-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.driver-card {
+  display: flex;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  /* Without this, a CSS Grid item defaults to min-width:auto, which lets
+     unbreakable content (e.g. a very long Service Area line) stretch the
+     whole card — and the grid track/page — wider than the screen. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease);
+}
+.driver-card:hover { border-color: var(--color-primary); }
+
+.driver-card__photo {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.driver-card__photo img { width: 100%; height: 100%; object-fit: cover; }
+.driver-card__photo svg { width: 32px; height: 32px; }
+
+.driver-card__body { flex: 1; min-width: 0; }
+.driver-card__name {
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.driver-card__meta {
+  font-size: var(--font-size-sm);
+  color: var(--color-ink-soft);
+  margin-bottom: var(--space-1);
+  /* Vehicle Type · Service Area must never wrap to a second line. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driver-card__rating-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-soft);
+  margin-bottom: var(--space-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.driver-card__experience { overflow: hidden; text-overflow: ellipsis; }
+.dot-sep { color: var(--color-line-strong); flex-shrink: 0; }
+
+.stars { display: inline-flex; flex-shrink: 0; letter-spacing: 1px; }
+.star { font-size: 0.95em; line-height: 1; }
+.star--filled { color: var(--color-accent); }
+.star--empty { color: var(--color-line-strong); }
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+.status-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-dot--available { color: var(--color-success); }
+.status-dot--unavailable { color: var(--color-danger); }
+.status-dot--lg {
+  display: flex;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+.status-dot--lg::before { width: 10px; height: 10px; }
+
+.driver-card__actions { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: wrap; }
+.driver-card__call-btn {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-radius: var(--radius-sm);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  min-width: 96px;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.driver-card__call-btn span { overflow: hidden; text-overflow: ellipsis; }
+.driver-card__call-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.driver-card__call-btn[disabled] { background: var(--color-line-strong); color: var(--color-ink-soft); cursor: not-allowed; }
+
+/* WhatsApp deep-link button — small, circular, icon-only, conditional. */
+.whatsapp-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease);
+}
+.whatsapp-btn:hover { transform: scale(1.05); }
+.whatsapp-btn:active { transform: scale(0.94); }
+.whatsapp-btn svg { width: 20px; height: 20px; }
+
+/* Fixed reserved space at the right edge of every Driver Card's button
+   row — present whether or not WhatsApp is shown (~1cm on typical
+   screens, scaled down a little on very narrow phones below). */
+.driver-card__spacer { flex-shrink: 0; width: 36px; }
+@media (max-width: 359px) {
+  .driver-card__spacer { width: 16px; }
+}
+
+/* ------------------------------------------------------------
+   EMPTY / LOADING / ERROR STATES
+   ------------------------------------------------------------ */
+.state-block {
+  text-align: center;
+  padding: var(--space-7) var(--space-4);
+  color: var(--color-ink-soft);
+}
+.state-block__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-3);
+  color: var(--color-line-strong);
+}
+.state-block h3 { color: var(--color-ink); margin-bottom: var(--space-2); font-size: var(--font-size-lg); }
+.state-block .btn { margin-top: var(--space-4); }
+
+.skeleton-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+.skeleton-card {
+  height: 100px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(100deg, var(--color-surface) 30%, var(--color-primary-soft) 50%, var(--color-surface) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border: 1px solid var(--color-line);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ------------------------------------------------------------
+   HOW IT WORKS
+   ------------------------------------------------------------ */
+/* Staggered layout: step 1 hugs the left, step 2 sits centered, step 3
+   hugs the right — reads as a left-to-right progression instead of
+   three identical stacked blocks. Each step also gets its own accent
+   colour (left border + number badge) for a little visual rhythm. */
+.steps { display: flex; flex-direction: column; gap: var(--space-4); }
+.step-card {
+  width: 76%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-left: 4px solid var(--step-accent, var(--color-primary));
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-float);
+}
+.step-card--1 { align-self: flex-start; --step-accent: var(--color-primary); }
+.step-card--2 { align-self: center; --step-accent: var(--color-accent); }
+.step-card--3 { align-self: flex-end; --step-accent: var(--color-primary-dark); }
+.step-card__num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--step-accent, var(--color-primary));
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: var(--space-3);
+}
+.step-card h3 { font-size: var(--font-size-md); margin-bottom: var(--space-1); }
+.step-card p { font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+
+/* ------------------------------------------------------------
+   CTA BAND
+   ------------------------------------------------------------ */
+.cta-band {
+  background-color: var(--color-primary-dark);
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  /* A soft ~2:1 (width:height) target so the section scales
+     proportionally with width instead of sitting at a fixed height —
+     but this is a preference, not a hard clip: min-height keeps it
+     from ever getting too short, and the box still grows if the text
+     genuinely needs more room. */
+  aspect-ratio: 2 / 1;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.cta-band--other {
+  width: calc(100% * 5 / 6);
+  min-height: 133px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.cta-band h2 { color: #fff; margin-bottom: var(--space-2); font-size: var(--font-size-xl); }
+.cta-band p { color: rgba(255,255,255,0.85); margin-bottom: var(--space-4); }
+
+/* ------------------------------------------------------------
+   FOOTER — kept intentionally compact: one brand+links row, one
+   thin copyright/language row, minimal padding either side.
+   ------------------------------------------------------------ */
+.site-footer {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+  padding: var(--space-3) 0;
+  margin-top: var(--space-5);
+}
+.footer-compact { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.footer-row--top { padding-bottom: var(--space-2); }
+.footer-row--bottom {
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-soft);
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink);
+}
+.footer-brand:hover { text-decoration: none; color: var(--color-primary); }
+.brand__mark--sm { width: 24px; height: 24px; }
+.brand__mark--sm svg { width: 15px; height: 15px; }
+
+.footer-nav { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.footer-nav a { color: var(--color-ink-soft); font-size: var(--font-size-xs); font-weight: 500; }
+.footer-nav a:hover { color: var(--color-primary); text-decoration: none; }
+
+.lang-toggle--sm button { padding: 4px var(--space-2); font-size: 0.7rem; }
+
+/* Footer social links — compact icon row beside the language toggle. */
+.footer-row--social { justify-content: center; }
+.footer-social { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.footer-social a {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+}
+.footer-social a:hover { background: var(--color-primary); color: var(--color-on-primary); text-decoration: none; }
+.footer-social a:active { transform: scale(0.94); }
+.footer-social svg { width: 15px; height: 15px; }
+
+@media (max-width: 480px) {
+  .footer-row--bottom { flex-direction: column-reverse; align-items: flex-start; gap: var(--space-2); }
+}
+
+/* ------------------------------------------------------------
+   FORMS
+   ------------------------------------------------------------ */
+.form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  max-width: 560px;
+  margin: 0 auto;
+}
+.field { margin-bottom: var(--space-4); }
+/* Post Office/Union and Upazila/District: two related address fields
+   side by side in one row, responsive down to narrow phone widths.
+   Each child keeps its own existing .field (label/input/hint/error),
+   so validation and spacing stay exactly as before — this only
+   changes how the two fields sit next to each other. */
+.field-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.field-row-2col .field { margin-bottom: var(--space-4); min-width: 0; }
+@media (max-width: 360px) {
+  .field-row-2col { grid-template-columns: 1fr; gap: 0; }
+}
+.field label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  color: var(--color-ink);
+}
+.field .hint { font-size: var(--font-size-xs); color: var(--color-ink-soft); margin-top: var(--space-1); }
+.field .error-msg {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  margin-top: var(--space-1);
+  display: none;
+}
+.field.has-error .error-msg { display: block; }
+.field.has-success .error-msg { display: block; color: var(--color-success); }
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea { border-color: var(--color-danger); }
+
+.field input[type="text"],
+.field input[type="tel"],
+.field input[type="password"],
+.field input[type="number"],
+.field input[type="url"],
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+}
+.field textarea { min-height: 88px; resize: vertical; }
+.field input::placeholder,
+.field select::placeholder,
+.field textarea::placeholder {
+  font-size: 0.85em;
+  color: var(--color-ink-soft);
+  opacity: 0.7;
+}
+.field textarea.is-readonly { background: var(--color-line); cursor: default; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--color-primary);
+}
+
+/* Subtle background tints grouping related registration fields —
+   purely visual, no effect on validation/required behavior. */
+.field--tint-a input, .field--tint-a select, .field--tint-a textarea { background: var(--color-tint-a); }
+.field--tint-b input, .field--tint-b select, .field--tint-b textarea { background: var(--color-tint-b); }
+.field--tint-c input, .field--tint-c select, .field--tint-c textarea { background: var(--color-tint-c); }
+.field--tint-d input, .field--tint-d select, .field--tint-d textarea { background: var(--color-tint-d); }
+.field--tint-d .experience-row input, .field--tint-d .experience-row select { background: var(--color-tint-d); }
+
+/* Father's/Husband's Name (and any similarly-marked) label must never
+   wrap to a second line — shrink instead, down to a sensible floor. */
+.field--label-noshrink-guard label {
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: clamp(0.72rem, 3.6vw, var(--font-size-sm));
+}
+
+.password-field { position: relative; }
+.password-field input { padding-right: 44px; }
+.password-field button {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 36px;
+  border: none;
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Multi-select vehicle type / preferred bazar — pill-style checkboxes,
+   easy to tap on mobile. Kept to a single compact horizontally-
+   scrolling row instead of wrapping into several rows, so a long list
+   of options never eats up extra vertical space on the form. */
+.checkbox-group {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-bottom: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.checkbox-option {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  background: var(--color-surface);
+}
+.checkbox-option:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+.checkbox-option input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+
+/* Driving Experience — number + Years/Months side by side, wraps to a
+   safe stacked layout only at extremely narrow widths. */
+.experience-row { display: flex; gap: var(--space-2); }
+.experience-row input { flex: 1 1 0; min-width: 0; }
+.experience-row select { flex: 1 1 0; min-width: 0; }
+
+/* Username availability indicator. */
+.username-field { position: relative; }
+.username-field input { padding-right: 40px; }
+.username-field__status {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  width: 20px;
+  height: 20px;
+  color: var(--color-ink-soft);
+}
+.username-field__status svg { width: 20px; height: 20px; }
+.username-field__status.is-checking { color: var(--color-ink-soft); animation: username-checking 1s linear infinite; }
+.username-field__status.is-available { color: var(--color-focus-ring); }
+@keyframes username-checking {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Mobile Number availability indicator — same look/behavior as the
+   Username field above, just its own class so neither is affected by
+   changes to the other. */
+.phone-field { position: relative; }
+.phone-field input { padding-right: 40px; }
+.phone-field__status {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  width: 20px;
+  height: 20px;
+  color: var(--color-ink-soft);
+}
+.phone-field__status svg { width: 20px; height: 20px; }
+.phone-field__status.is-checking { color: var(--color-ink-soft); animation: username-checking 1s linear infinite; }
+.phone-field__status.is-available { color: var(--color-focus-ring); }
+
+/* Step 3 photo submission: Google Drive link accessibility indicator —
+   same look/behavior as the Mobile/Username availability indicators. */
+.drive-image-field { position: relative; }
+/* Higher specificity than the shared ".field input[type="url"]" rule
+   (which sets padding on all four sides) so this padding-right survives
+   and the accessibility tick/cross icon never overlaps the link text. */
+.field .drive-image-field input[type="url"] { padding-right: 44px; }
+.drive-image-field__status {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  width: 20px;
+  height: 20px;
+  color: var(--color-ink-soft);
+}
+.drive-image-field__status svg { width: 20px; height: 20px; }
+.drive-image-field__status.is-checking { color: var(--color-ink-soft); animation: username-checking 1s linear infinite; }
+.drive-image-field__status.is-available { color: var(--color-focus-ring); }
+
+/* Step 3 photo instructions + WhatsApp help line. */
+.photo-instructions { margin-bottom: var(--space-4); }
+.photo-instructions p { margin: 0 0 var(--space-2); }
+.photo-whatsapp-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.photo-whatsapp-help svg { width: 16px; height: 16px; }
+.photo-whatsapp-help:hover, .photo-whatsapp-help:active { text-decoration: underline; }
+
+/* Step 3's new, first/most-prominent "Photo Upload" option — a big
+   native-looking tap target, deliberately styled to stand out well
+   above the existing Drive Link/PIN row beneath it. Three visual
+   states: idle (dashed tap area), chosen (thumbnail + Send button),
+   and confirmed (solid brand-color card, no tap target). */
+.photo-upload-card { margin-bottom: var(--space-4); }
+.photo-upload-card__status { margin-top: var(--space-2); }
+.photo-upload-card__status:empty { display: none; }
+.photo-status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+.photo-status svg { width: 16px; height: 16px; flex-shrink: 0; }
+.photo-status--success { color: var(--color-primary-dark); }
+.photo-status--error { color: var(--color-danger); }
+.photo-status--loading { color: var(--color-primary-dark); font-weight: 600; }
+.photo-spinner {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: photo-spin 0.8s linear infinite;
+}
+.photo-progress { margin-top: var(--space-2); height: 4px; border-radius: 2px; background: var(--color-line); overflow: hidden; }
+.photo-progress__bar { display: block; height: 100%; width: 40%; border-radius: 2px; background: var(--color-primary); animation: photo-progress-slide 1.2s ease-in-out infinite; }
+@keyframes photo-spin { to { transform: rotate(360deg); } }
+@keyframes photo-progress-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+#socialUrl { min-height: 48px; }
+.photo-preview { display: block; width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: var(--space-2); }
+.photo-upload-card__drop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;  /* Fixed 3:1 shape (width : height) at every screen size, so the
+     background photo can be prepared at a 3:1 size (e.g. 1200 x 400 px). */
+  aspect-ratio: 3 / 1;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+/* Optional background photo (set inline from config's
+   SECTION_BACKGROUNDS.registerPhotoUpload). A soft-green overlay keeps the
+   text readable; with no photo file, only the plain soft-green shows. */
+.photo-upload-card__drop {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.photo-upload-card__drop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary-soft);
+  opacity: 0.72;
+  pointer-events: none;
+}
+.photo-upload-card__drop > * { position: relative; }
+.photo-upload-card__drop:disabled { cursor: not-allowed; opacity: 0.55; }
+.photo-upload-card__drop:disabled > * { pointer-events: none; }
+
+/* "Send via Google Form" button inside the Vehicle Photo header. */
+.photo-form-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #1b1b1b;
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+.photo-form-link-btn:hover, .photo-form-link-btn:active { background: var(--color-accent-dark); color: #fff; }
+
+.photo-upload-card__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.photo-upload-card__icon svg { width: 24px; height: 24px; }
+.photo-upload-card__title { font-size: var(--font-size-md); font-weight: 700; }
+.photo-upload-card__subtitle { font-size: var(--font-size-xs); color: var(--color-ink-soft); margin-top: 2px; }
+
+.photo-upload-card__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.photo-upload-card__thumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--color-line);
+}
+.photo-upload-card__filename {
+  font-size: var(--font-size-sm);
+  word-break: break-all;
+  flex: 1 1 auto;
+}
+.photo-upload-card__change {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--space-1);
+}
+.photo-upload-card__actions { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.photo-upload-card__hint { font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+.photo-upload-card__link { align-self: flex-start; background: none; border: none; padding: 0; color: var(--color-primary); font-size: var(--font-size-xs); font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+.photo-upload-card.is-confirmed .photo-upload-card__drop {
+  border: 1px solid var(--color-primary);
+  border-style: solid;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  cursor: default;
+}
+.photo-upload-card.is-confirmed .photo-upload-card__icon { background: var(--color-on-primary); color: var(--color-primary); }
+.photo-upload-card.is-confirmed .photo-upload-card__subtitle { color: var(--color-on-primary); opacity: 0.85; }
+.photo-upload-card__undo {
+  margin-top: var(--space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* "অথবা / OR" divider between the Photo Upload card and the existing
+   Drive Link/PIN row beneath it. */
+.photo-method-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  color: var(--color-ink-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.photo-method-divider::before,
+.photo-method-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* Drive Link (~70%) and PIN (~30%) side by side on one row. Each child
+   keeps its own existing .field (label/input/hint/error) untouched —
+   this only changes how the two fields sit next to each other. Falls
+   back to a single column on very narrow phones so neither box gets
+   crushed. */
+.photo-input-row {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+.photo-input-row .field { margin-bottom: var(--space-4); min-width: 0; }
+@media (max-width: 360px) {
+  .photo-input-row { grid-template-columns: 1fr; gap: 0; }
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+.step-indicator__track {
+  flex: 1;
+  height: 6px;
+  background: var(--color-line);
+  border-radius: var(--radius-pill);
+  margin: 0 var(--space-3);
+  overflow: hidden;
+}
+.step-indicator__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-base) var(--ease);
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.form-actions .btn { flex: 1; }
+
+.review-list { border-top: 1px solid var(--color-line); margin-top: var(--space-2); }
+.review-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--font-size-sm);
+}
+.review-row dt { color: var(--color-ink-soft); }
+.review-row dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ------------------------------------------------------------
+   TOAST
+   ------------------------------------------------------------ */
+.toast-region {
+  position: fixed;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+.toast {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  animation: toast-in var(--duration-base) var(--ease);
+  pointer-events: auto;
+}
+.toast--success { background: var(--color-primary-dark); color: #fff; }
+.toast--error { background: var(--color-danger); color: #fff; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------------------------------------
+   MODAL
+   ------------------------------------------------------------ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  z-index: 250;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-sheet {
+  background: var(--color-surface);
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-5);
+  animation: sheet-up var(--duration-base) var(--ease);
+}
+@keyframes sheet-up {
+  from { transform: translateY(24px); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.modal-head h3 { font-size: var(--font-size-lg); }
+
+.confirm-actions { display: flex; gap: var(--space-3); margin-top: var(--space-5); }
+.confirm-actions .btn { flex: 1; }
+
+/* ------------------------------------------------------------
+   DRIVER DETAILS
+   ------------------------------------------------------------ */
+
+/* Name + Close button share one row, directly under the breadcrumb —
+   the X never moves down next to the gallery. */
+.detail-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 2px;
+  margin-bottom: var(--space-4);
+}
+.detail-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.detail-name-row .icon-btn { flex-shrink: 0; }
+
+.detail-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+.detail-photo img { width: 100%; height: 100%; object-fit: cover; }
+.detail-photo svg { width: 64px; height: 64px; }
+
+.detail-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-2);
+}
+
+.detail-row {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.detail-col { flex: 1; min-width: 0; }
+.detail-col--full { flex: 1 1 100%; }
+.detail-col__label { font-size: var(--font-size-xs); color: var(--color-ink-soft); margin-bottom: 2px; }
+.detail-col__value { font-size: var(--font-size-md); font-weight: 600; color: var(--color-ink); }
+.detail-col__value--truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.detail-col__value--link {
+  color: var(--color-primary);
+  text-decoration: none;
+  display: inline-block;
+}
+.detail-col__value--link:hover { text-decoration: underline; }
+.detail-col__value--phone { display: inline-flex; align-items: center; gap: 6px; }
+.detail-col__phone-icon { color: var(--color-primary); flex-shrink: 0; display: inline-flex; }
+.detail-col__phone-icon svg { width: 15px; height: 15px; }
+
+/* Compact call/WhatsApp row — fixed, controlled height (matches the
+   Driver Card's Call button), width divides dynamically, NEVER wraps
+   onto extra lines (that was what made this section look too tall). */
+.action-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+  height: 40px;
+}
+.action-row__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.action-row .whatsapp-btn { flex-shrink: 0; }
+
+/* ------------------------------------------------------------
+   VEHICLE IMAGE GALLERY
+   ------------------------------------------------------------ */
+.gallery {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+}
+.gallery__thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 64px;
+  flex-shrink: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.gallery__thumb {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: var(--color-primary-soft);
+  cursor: pointer;
+}
+.gallery__thumb.is-active { border-color: var(--color-primary); }
+.gallery__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.gallery__main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-primary-soft);
+}
+.gallery__main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(10, 20, 14, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.gallery__arrow:hover { background: rgba(10, 20, 14, 0.7); }
+.gallery__arrow svg { width: 18px; height: 18px; }
+.gallery__arrow--prev { left: 8px; }
+.gallery__arrow--next { right: 8px; }
+
+/* ------------------------------------------------------------
+   RATE THIS DRIVER (UI-only demo widget — nothing is ever saved)
+   ------------------------------------------------------------ */
+.rate-section {
+  border-top: 1px solid var(--color-line);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+}
+.rate-stars {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+.rate-stars .star {
+  background: none;
+  border: none;
+  padding: 2px;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.rate-textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  resize: vertical;
+}
+
+/* Aggregate rating (verified public reviews + admin Manual Rating,
+   capped at 5) shown above the review list/submission form. */
+.reviews-summary { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+.reviews-summary .stars .star { font-size: 1.1rem; }
+.reviews-summary__value { font-weight: 700; font-size: var(--font-size-md); }
+.reviews-summary__count { font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+
+.reviews-list { margin-bottom: var(--space-3); }
+/* "View All Reviews" expands into this instead of growing the page
+   itself — capped to roughly 8 reviews' worth of height (a review
+   item is ~80px including its border), then scrolls internally for
+   anything beyond that, so 100/500/1000 reviews never push the Star
+   Rating input, Comment box, Submit button, or the Video section that
+   follows unreasonably far down the page. */
+.reviews-list--expanded {
+  max-height: 640px;
+  overflow-y: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+}
+.reviews-empty { color: var(--color-ink-soft); font-size: var(--font-size-sm); }
+.review-item { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-line); }
+.review-item:last-child { border-bottom: none; }
+.review-item .stars .star { font-size: 0.9rem; }
+.review-item__comment { margin: var(--space-1) 0 0; font-size: var(--font-size-sm); color: var(--color-ink); }
+.review-item__date { margin-top: 2px; font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+.reviews-view-all-btn { margin-bottom: var(--space-4); }
+
+/* Row holding View All / Close Reviews + the non-clickable "Review the
+   driver/doctor" speech bubble. The bubble's tail points down at the
+   stars below. With no View All button showing, the bubble centers. */
+.reviews-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: 1.125rem;
+}
+.reviews-action-row .reviews-view-all-btn { margin-bottom: 0; }
+.review-bubble {
+  --bubble-bg: var(--color-primary-soft);
+  --bubble-line: var(--color-primary);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4);
+  border: 1.5px solid var(--bubble-line);
+  border-radius: var(--radius-md);
+  background: var(--bubble-bg);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+/* Speech-bubble tail: an outline triangle (::before) with a fill
+   triangle (::after) on top so the border reads as one shape. */
+.review-bubble::before,
+.review-bubble::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.review-bubble::before {
+  width: 16px;
+  height: 14px;
+  left: 18px;
+  bottom: -12.5px;
+  background: var(--bubble-line);
+}
+.review-bubble::after {
+  width: 12px;
+  height: 11px;
+  left: 20px;
+  bottom: -9.5px;
+  background: var(--bubble-bg);
+}
+.reviews-action-row.is-solo { justify-content: center; }
+.reviews-action-row.is-solo .review-bubble::before { left: calc(50% - 8px); }
+.reviews-action-row.is-solo .review-bubble::after { left: calc(50% - 6px); }
+
+/* Star-submit button: centered, with a slightly tighter gap under the
+   comment box. */
+.rate-submit-row {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+
+/* ------------------------------------------------------------
+   SOCIAL LINKS ROW (Driver/Doctor Details) — three small round
+   icon buttons, no header, deliberately low height. GitHub-style
+   neutral palette; brand-colored icons.
+   ------------------------------------------------------------ */
+.social-links-section {
+  --sl-bg: #f6f8fa;
+  --sl-bg-hover: #eaeef2;
+  --sl-border: #d0d7de;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-1) 0;
+}
+[data-theme="dark"] .social-links-section {
+  --sl-bg: #21262d;
+  --sl-bg-hover: #30363d;
+  --sl-border: #30363d;
+}
+.social-links__btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--sl-border);
+  background: var(--sl-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);
+}
+.social-links__btn:hover { background: var(--sl-bg-hover); text-decoration: none; }
+.social-links__btn:active { transform: scale(0.94); }
+.social-links__btn svg { width: 16px; height: 16px; }
+.social-links__btn--maps { color: #ea4335; }
+.social-links__btn--facebook { color: #1877f2; }
+.social-links__btn--youtube { color: #ff0000; }
+.social-links__btn--whatsapp { color: #25d366; }
+.social-links__btn--tiktok { color: #111111; }
+.social-links__btn--linkedin { color: #0a66c2; }
+.social-links__btn--instagram { color: #e4405f; }
+.social-links__btn--x { color: #111111; }
+.social-links__btn--telegram { color: #26a5e4; }
+.social-links__btn--messenger { color: #0084ff; }
+.social-links__btn--snapchat { color: #e6b800; }
+.social-links__btn--pinterest { color: #e60023; }
+.social-links__btn--threads { color: #111111; }
+.social-links__btn--website { color: #57606a; }
+[data-theme="dark"] .social-links__btn--tiktok,
+[data-theme="dark"] .social-links__btn--x,
+[data-theme="dark"] .social-links__btn--threads { color: #f0f6fc; }
+[data-theme="dark"] .social-links__btn--website { color: #9da7b3; }
+
+/* ------------------------------------------------------------
+   PERSONAL DETAILS — Sheet-authored plain text or basic HTML,
+   rendered as-is (see Personal Details column in Code.gs). Default
+   typography for the handful of tags an admin is likely to use.
+   ------------------------------------------------------------ */
+.personal-details-section { border-top: 1px solid var(--color-line); padding-top: var(--space-4); }
+.personal-details { font-size: var(--font-size-sm); color: var(--color-ink); line-height: 1.6; }
+.personal-details h1, .personal-details h2, .personal-details h3, .personal-details h4 {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  margin: var(--space-3) 0 var(--space-1);
+}
+.personal-details h1:first-child, .personal-details h2:first-child, .personal-details h3:first-child, .personal-details h4:first-child { margin-top: 0; }
+.personal-details p { margin: 0 0 var(--space-2); }
+.personal-details ul, .personal-details ol { margin: 0 0 var(--space-2); padding-left: 1.25em; }
+.personal-details li { margin-bottom: 2px; }
+.personal-details a { color: var(--color-primary); }
+.personal-details img { max-width: 100%; border-radius: var(--radius-sm); }
+
+/* ------------------------------------------------------------
+   VIDEO SECTION — embedded YouTube/Google Drive player
+   ------------------------------------------------------------ */
+.video-section { border-top: 1px solid var(--color-line); padding-top: var(--space-4); }
+/* Starts hidden — no fixed timeout; JS removes this class the moment
+   the iframe's own `load` event actually fires (see buildVideoSection
+   in utils.js), however long that takes. Never shown at all if it
+   never fires. */
+.video-section.is-loading { display: none; }
+.video-embed { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; background: #000; }
+.video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ------------------------------------------------------------
+   PROFILE
+   ------------------------------------------------------------ */
+.profile-page { max-width: 640px; margin: 0 auto; }
+
+/* -- Header hero: photo, name, vehicle type, rating, experience,
+      with a vehicle-type-driven background + decorative icon -- */
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-bg) 85%);
+}
+.profile-hero__decor {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  width: 128px;
+  height: 128px;
+  color: var(--color-primary-dark);
+  opacity: 0.16;
+  pointer-events: none;
+}
+.profile-hero__decor svg { width: 100%; height: 100%; }
+.profile-hero--auto { background: linear-gradient(135deg, transparent 40%, var(--color-accent)), var(--color-bg); }
+.profile-hero--auto .profile-hero__decor { color: var(--color-accent-dark); }
+.profile-hero--van { background: linear-gradient(135deg, transparent 40%, var(--color-focus-ring)), var(--color-bg); }
+.profile-hero--van .profile-hero__decor { color: var(--color-focus-ring); }
+.profile-hero--motorcycle { background: linear-gradient(135deg, transparent 40%, var(--color-accent-dark)), var(--color-primary-soft); }
+.profile-hero--easy-bike { background: linear-gradient(135deg, transparent 40%, var(--color-focus-ring)), var(--color-primary-soft); }
+.profile-hero__top { position: relative; display: flex; gap: var(--space-4); align-items: flex-start; }
+
+.profile-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 3px solid var(--color-bg);
+}
+.profile-photo svg { width: 42px; height: 42px; }
+.profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.profile-badge svg { width: 13px; height: 13px; }
+.profile-badge--active { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.profile-badge--pending { background: var(--color-accent); color: var(--color-on-accent); }
+.profile-badge--suspended { background: var(--color-danger-soft); color: var(--color-danger); }
+
+.profile-name { font-size: var(--font-size-xl); font-weight: 700; margin: 0 0 2px; }
+.profile-vehicle-type {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+.profile-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+.profile-meta-row svg { width: 15px; height: 15px; vertical-align: -3px; color: var(--color-accent-dark); }
+.profile-meta-row .icon-shield { color: var(--color-primary-dark); }
+.profile-meta-row .dot-sep { color: var(--color-line-strong); }
+
+/* -- Section cards (Account Overview / Service Areas / Vehicle
+      Information / Profile Fields) -- */
+.profile-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.profile-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
+.profile-card__head h2 { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-md); font-weight: 700; margin: 0; }
+.profile-card__head h2 svg { width: 18px; height: 18px; color: var(--color-primary); flex-shrink: 0; }
+
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pill-btn svg { width: 12px; height: 12px; }
+
+/* -- Account Overview grid -- */
+.overview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.overview-grid--top { grid-template-columns: repeat(3, 1fr); margin-bottom: var(--space-3); }
+.overview-grid--bottom { grid-template-columns: repeat(3, 1fr); }
+.overview-grid--top, .overview-grid--bottom { column-gap: 6px; }
+/* Account Overview only (scoped via .overview-grid) — smaller, single-line
+   text so 3-per-row headers/values never wrap, even for "Primary Phone"
+   and its number on narrow phones. Vehicle Information / Profile Fields
+   reuse .overview-item elsewhere but are NOT inside .overview-grid, so
+   they keep their own existing sizing untouched. */
+.overview-grid .overview-item { gap: 6px; }
+.overview-grid .overview-icon { width: 24px; height: 24px; }
+.overview-grid .overview-icon svg { width: 12px; height: 12px; }
+.overview-grid .overview-label,
+.overview-grid .overview-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.overview-grid .overview-label { font-size: clamp(9px, 2.6vw, 11px); }
+.overview-grid .overview-value { font-size: clamp(10px, 3vw, 12.5px); }
+.overview-grid .status-pill { font-size: clamp(9px, 2.6vw, 11px); padding: 1px 6px; }
+.overview-item { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.overview-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.overview-icon svg { width: 15px; height: 15px; }
+.overview-label { font-size: var(--font-size-xs); color: var(--color-ink-soft); margin-bottom: 2px; }
+.overview-value { font-size: var(--font-size-sm); font-weight: 700; overflow-wrap: anywhere; }
+
+.status-pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--radius-pill); font-size: var(--font-size-xs); font-weight: 700; }
+.status-pill--success { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.status-pill--warning { background: var(--color-accent); color: var(--color-on-accent); }
+.status-pill--danger { background: var(--color-danger-soft); color: var(--color-danger); }
+.status-pill--neutral { background: var(--color-line); color: var(--color-ink-soft); }
+
+/* -- Small colour chips (Service Areas / Preferred Bazar) -- */
+.info-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-3); }
+.info-chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.service-area-row { display: flex; gap: 10px; align-items: flex-start; }
+.service-area-row svg { width: 18px; height: 18px; color: var(--color-primary-dark); flex-shrink: 0; margin-top: 2px; }
+.service-area-row__label { font-size: var(--font-size-sm); font-weight: 700; margin-bottom: 2px; }
+.service-area-row__text { font-size: var(--font-size-sm); color: var(--color-ink-soft); line-height: 1.5; }
+
+/* -- Vehicle Information layout -- */
+.vehicle-info-grid { display: grid; grid-template-columns: 190px 1fr; column-gap: var(--space-4); row-gap: var(--space-3); align-items: start; }
+.vehicle-thumb {
+  position: relative;
+  width: 128px;
+  height: 96px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: var(--color-primary-soft);
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+}
+.vehicle-thumb svg { width: 34px; height: 34px; }
+.vehicle-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vehicle-thumb__badge {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(10, 20, 15, 0.6);
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+}
+.vehicle-info-cols { display: flex; gap: var(--space-4); flex-wrap: wrap; flex: 1; min-width: 160px; }
+.vehicle-info-col { min-width: 128px; }
+.vehicle-info-col .overview-item + .overview-item { margin-top: var(--space-3); }
+
+/* Compact photo gallery (big photo + up to 3 small stacked photos,
+   matching the big photo's height) + the two info items beside it,
+   with the remaining two info items on their own full-width row below. */
+.vehicle-gallery-compact { display: flex; gap: 6px; flex-shrink: 0; }
+.vehicle-gallery-compact__side { display: flex; flex-direction: column; gap: 6px; }
+.vehicle-side-thumb {
+  position: relative;
+  width: 56px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-primary-soft);
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+}
+.vehicle-side-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vehicle-side-thumb__badge {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 20, 15, 0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vehicle-info-top { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+
+/* -- Profile Fields grid -- */
+.profile-fields-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+
+/* -- Link rows (Change Password / Vehicle Photos) -- */
+.profile-link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-ink);
+  font-family: inherit;
+}
+.profile-link-row__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.profile-link-row__icon svg { width: 18px; height: 18px; }
+.profile-link-row__body { flex: 1; min-width: 0; }
+.profile-link-row__title { font-weight: 700; font-size: var(--font-size-sm); }
+.profile-link-row__sub { font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+.profile-link-row__chevron { color: var(--color-ink-soft); flex-shrink: 0; }
+.profile-link-row__chevron svg { width: 16px; height: 16px; }
+
+/* -- Big, clear Availability toggle -- */
+.availability-toggle { display: flex; gap: var(--space-3); margin-bottom: var(--space-4); }
+.availability-toggle__option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-line-strong);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-ink-soft);
+  font-family: inherit;
+}
+.availability-toggle__option svg { width: 22px; height: 22px; flex-shrink: 0; }
+.availability-toggle__title { font-weight: 700; font-size: var(--font-size-sm); display: block; }
+.availability-toggle__sub { font-size: var(--font-size-xs); }
+.availability-toggle__option.is-selected--active { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.availability-toggle__option.is-selected--inactive { border-color: var(--color-danger); background: var(--color-danger-soft); color: var(--color-danger); }
+
+.btn--outline-danger { background: transparent; color: var(--color-danger); border: 1px solid var(--color-danger); }
+.btn--outline-danger:hover { background: var(--color-danger-soft); }
+
+/* -- Edit Profile / Change Password modal forms -- */
+.profile-form-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+@media (min-width: 480px) {
+  .profile-form-grid--2col { grid-template-columns: 1fr 1fr; column-gap: var(--space-4); }
+}
+
+/* -- Vehicle Photos modal -- */
+.vehicle-gallery-empty { text-align: center; padding: var(--space-6) var(--space-3); color: var(--color-ink-soft); }
+.vehicle-gallery-empty svg { width: 40px; height: 40px; margin-bottom: var(--space-2); }
+
+/* utility */
+.mt-5 { margin-top: var(--space-5); }
+.text-center { text-align: center; }
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+
+/* ------------------------------------------------------------
+   ADMIN PANEL (Profile > Admin Dashboard, edit pens, editor,
+   Pending Drivers window). Everything here only appears for
+   admins with Admin Mode on.
+   ------------------------------------------------------------ */
+.admin-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-toggle-row__label { font-size: var(--font-size-md); color: var(--color-ink); }
+.admin-switch {
+  position: relative; flex-shrink: 0; width: 52px; height: 30px; padding: 0;
+  border-radius: var(--radius-pill); border: 0; cursor: pointer;
+  background: var(--color-line-strong); transition: background var(--duration-fast) var(--ease);
+}
+.admin-switch.is-on { background: var(--color-primary); }
+.admin-switch__knob {
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform var(--duration-fast) var(--ease);
+}
+.admin-switch.is-on .admin-switch__knob { transform: translateX(22px); }
+
+.admin-timer-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: var(--space-3); }
+.admin-timer-group { display: flex; gap: 4px; }
+.admin-chip {
+  padding: 6px 7px; border-radius: var(--radius-sm); border: 1px solid var(--color-line);
+  background: var(--color-bg); color: var(--color-ink); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.admin-chip:disabled { opacity: 0.55; cursor: default; }
+.admin-time { font-size: var(--font-size-md); font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+
+.admin-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-top: var(--space-3); }
+.admin-action {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-width: 0; min-height: 62px; padding: var(--space-2); border-radius: var(--radius-md);
+  border: 1px solid var(--color-line); background: var(--color-bg); color: var(--color-ink); cursor: pointer;
+  font-weight: 600; font-size: 12px; line-height: 1.25; text-align: center;
+}
+.admin-action:hover { border-color: var(--color-primary); }
+.admin-action__icon svg { width: 20px; height: 20px; color: var(--color-primary); }
+
+.admin-pw-wrap { position: relative; }
+.admin-pw-wrap input {
+  width: 100%; padding: 12px 44px 12px 14px; border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-ink); font-size: 16px;
+}
+.admin-pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; background: transparent; color: var(--color-ink-soft); cursor: pointer; }
+.admin-pw-eye svg { width: 20px; height: 20px; }
+.admin-verify__hint { color: var(--color-ink-soft); margin: 0 0 var(--space-3); }
+.admin-verify__error { color: var(--color-danger); font-size: var(--font-size-sm); min-height: 1.2em; margin: var(--space-2) 0; }
+.admin-verify .btn { margin-top: var(--space-2); }
+.admin-spinner {
+  display: inline-block; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: admin-spin 0.7s linear infinite;
+}
+@keyframes admin-spin { to { transform: rotate(360deg); } }
+.admin-loading { display: flex; justify-content: center; padding: var(--space-6) 0; color: var(--color-primary); }
+
+/* Edit pen on driver/doctor cards: floats in the card's free top-right corner, so the card's own size never changes. */
+.driver-card { position: relative; }
+.admin-pen-btn {
+  display: none; position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 28px; height: 28px; padding: 0; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1px solid var(--color-line-strong);
+  background: var(--color-surface); color: var(--color-primary); cursor: pointer;
+}
+.admin-pen-btn svg { width: 14px; height: 14px; }
+.admin-mode-on .admin-pen-btn { display: inline-flex; }
+.admin-mode-on .driver-card__name { padding-right: 32px; }
+
+.admin-edit-form .field textarea { min-height: 72px; }
+.admin-multi { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px 8px; padding-bottom: var(--space-1); -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.admin-multi__item {
+  display: inline-flex; flex-shrink: 0; white-space: nowrap; align-items: center; gap: 6px; padding: 6px 10px; margin: 0;
+  border: 1px solid var(--color-line-strong); border-radius: var(--radius-pill); font-size: var(--font-size-sm); font-weight: 500; cursor: pointer;
+}
+.admin-multi__item input { margin: 0; }
+
+.admin-pending-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.admin-empty { text-align: center; color: var(--color-ink-soft); padding: var(--space-5) 0; margin: 0; }
+.admin-pending-item {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3); border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-bg);
+}
+.admin-pending-item__info { min-width: 0; }
+.admin-pending-item__name { font-weight: 700; overflow-wrap: anywhere; }
+.admin-pending-item__meta { font-size: var(--font-size-xs); color: var(--color-ink-soft); overflow-wrap: anywhere; }
+.admin-pending-item__actions { display: flex; gap: 6px; flex-shrink: 0; }
+.admin-pending-item__actions .btn { min-width: 52px; }
+
+.admin-action { position: relative; }
+.admin-badge {
+  position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  border-radius: 9px; background: #d93025; color: #fff; font-size: 11px; font-weight: 700; line-height: 1;
+}
+.admin-badge[hidden] { display: none; }
+
+.admin-rating-item {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3); border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-bg);
+}
+.admin-rating-item__photo {
+  width: 52px; height: 52px; flex-shrink: 0; overflow: hidden; border-radius: var(--radius-sm);
+  background: var(--color-primary-soft); color: var(--color-primary-dark);
+  display: flex; align-items: center; justify-content: center;
+}
+.admin-rating-item__photo img { width: 100%; height: 100%; object-fit: cover; }
+.admin-rating-item__photo svg { width: 26px; height: 26px; }
+.admin-rating-item__body { flex: 1; min-width: 0; }
+.admin-rating-item__stars { display: flex; align-items: center; margin-top: 2px; }
+.admin-rating-item__comment { margin-top: 4px; font-size: var(--font-size-sm); white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-pending-item .admin-rating-item__photo + .admin-pending-item__info { flex: 1; }
+
+.home-bazar { padding-top: var(--space-3); padding-bottom: var(--space-2); }
+.home-bazar__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.home-bazar__bar--end { justify-content: flex-end; }
+.home-bazar__current {
+  display: flex; align-items: center; gap: var(--space-2); flex: 1 1 auto; min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface); color: var(--color-ink);
+  border: 1px solid var(--color-line); border-radius: var(--radius-pill);
+  font: inherit; cursor: pointer; text-align: left;
+}
+.home-bazar__current:hover { border-color: var(--color-primary); }
+.home-bazar__pin { display: inline-flex; width: 20px; height: 20px; color: var(--color-primary); flex: 0 0 auto; }
+.home-bazar__pin svg { width: 100%; height: 100%; }
+.home-bazar__label { color: var(--color-ink-soft); font-size: var(--font-size-xs); white-space: nowrap; }
+.home-bazar__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-bazar__change { margin-left: auto; color: var(--color-primary); font-size: var(--font-size-xs); font-weight: 600; white-space: nowrap; }
+.home-bazar__emergency { flex: 0 0 auto; width: auto; }
+.home-bazar__picker { margin-top: var(--space-4); }
+.home-bazar__skip { margin-top: var(--space-3); text-align: center; }
+
+.notice-list { display: grid; gap: var(--space-3); }
+.notice-card {
+  padding: var(--space-4);
+  background: var(--color-surface); color: var(--color-ink);
+  border: 1px solid var(--color-line); border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+.notice-card--urgent { border-left-color: var(--color-danger); background: var(--color-danger-soft); }
+.notice-card__date { color: var(--color-ink-soft); font-size: var(--font-size-xs); margin-bottom: var(--space-1); }
+.notice-card__title { margin: 0 0 var(--space-1); font-size: var(--font-size-lg); }
+.notice-card__text { margin: 0; color: var(--color-ink-soft); }
+.notice-card__link { margin-top: var(--space-3); }
+.notice-card--has-bg {
+  background-size: cover; background-position: center;
+  border-color: transparent;
+  color: #FFFFFF;
+}
+.notice-card--has-bg .notice-card__date,
+.notice-card--has-bg .notice-card__text { color: rgba(255, 255, 255, 0.9); }
+.notice-card--has-bg .notice-card__link { color: #FFFFFF; border-color: rgba(255, 255, 255, 0.7); }
+.home-notice-zone .section { padding-bottom: 0; }
+.home-notice-zone:not(:empty) + .section { padding-top: var(--space-4); }
+
+.cat-notice {
+  margin: 0 0 var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.cat-notice__head {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 700; font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--color-line);
+}
+.cat-notice__badge { font-size: 1.125rem; line-height: 1; }
+.cat-notice__list { display: grid; }
+.cat-notice__item { padding: var(--space-3) var(--space-4); border-left: 4px solid var(--color-accent); }
+.cat-notice__item + .cat-notice__item { border-top: 1px dashed var(--color-line); }
+.cat-notice__item--urgent { border-left-color: var(--color-danger); background: var(--color-danger-soft); }
+.cat-notice__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+.cat-notice__date {
+  display: inline-block; padding: 2px var(--space-3);
+  background: var(--color-tint-b); color: var(--color-ink);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs); font-weight: 600;
+}
+.cat-notice__urgent {
+  display: inline-block; padding: 2px var(--space-3);
+  background: var(--color-danger); color: #FFFFFF;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs); font-weight: 700;
+}
+.cat-notice__title { margin: 0 0 var(--space-1); font-size: var(--font-size-md); }
+.cat-notice__text { margin: 0; color: var(--color-ink-soft); font-size: var(--font-size-sm); line-height: 1.55; }
+.cat-notice__link { margin-top: var(--space-2); }
+
+.home-cat__icon { font-size: 1.5rem; line-height: 1; }
+.home-cat--soon { cursor: default; opacity: 0.6; }
+.home-cat--soon:hover { border-color: var(--color-line); }
+.home-cat--soon:active { transform: none; }
+.home-cat__soon { font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+@media (max-width: 480px) {
+  .home-bazar__label { display: none; }
+  .home-bazar__name { flex: 0 1 auto; }
+}
+
+/* ------------------------------------------------------------
+   SHARE LINK BUTTON — zero-width anchor right after a heading, so no
+   neighbouring element moves or resizes.
+   ------------------------------------------------------------ */
+.share-anchor { position: relative; flex: 0 0 0; width: 0; height: 0; align-self: center; }
+.section-head__title-row > .share-anchor { margin-left: -6px; }
+.detail-name-row > .share-anchor { margin: 0 auto 0 calc(-1 * var(--space-3)); }
+.share-btn {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  text-shadow: none;
+}
+.share-btn svg { width: 15px; height: 15px; }
+.share-btn:active { transform: translateY(-50%) scale(0.94); }
+.share-btn--tuck { left: -34px; }
+.extra-grid { row-gap: 0; }
+.photo-alt-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: 0 0 var(--space-3); }
+.photo-alt-row .photo-whatsapp-help { flex: 1 1 auto; min-width: 0; font-size: var(--font-size-sm); }
+.social-label-icons { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; vertical-align: middle; }
+.social-label-icons__item { display: inline-flex; width: 15px; height: 15px; }
+.social-label-icons__item svg { width: 15px; height: 15px; }
+.social-label-icons__item--facebook { color: #1877f2; }
+.social-label-icons__item--maps { color: #ea4335; }
+.social-label-icons__item--tiktok { color: var(--color-ink); }
+.social-label-icons__item--youtube { color: #ff0000; }
+.photo-field-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.photo-field-head label { margin-bottom: 0; }
+.photo-alt-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.photo-alt-toggle svg { width: 15px; height: 15px; }
+.photo-alt-toggle[aria-expanded="true"] { background: var(--color-primary); border-color: transparent; color: var(--color-on-primary); }
+.photo-alt-block .field:last-child { margin-bottom: 0; }
+.photo-error-proxy { margin-bottom: var(--space-3); }
+.photo-error-proxy:not(.has-error) { display: none; }
+.photo-error-proxy .error-msg { margin-top: 0; }
+.photo-form-link-btn + .photo-alt-block { margin-top: var(--space-2); }
+.multi-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.multi-head > label { margin-bottom: 0; min-width: 0; }
+.field input[type="text"].multi-search {
+  flex: 0 0 auto;
+  width: 38%;
+  min-width: 90px;
+  max-width: 140px;
+  min-height: 0;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+}
+.field input[type="text"].multi-search::placeholder { font-size: 12px; opacity: 0.8; }

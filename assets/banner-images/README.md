@@ -25,6 +25,11 @@ website picks them up automatically, no code changes needed:
 | `vehicle-<slug>-banner-02.jpg` | Same slide 2 — shown if the `.gif` is missing; blank if neither exists |
 | `vehicle-<slug>-banner-03.jpg` | Same banner, slide 3 — shown whenever the slide-3 video can't play; blank if missing |
 
+| `global-banner-01.jpg` | GLOBAL banner, slide 1 — shown on any page whose own slide 1 picture is missing |
+| `global-banner-02.gif` | GLOBAL banner, slide 2 — tried FIRST (animated). Optional |
+| `global-banner-02.jpg` | GLOBAL banner, slide 2 — shown if the `.gif` is missing |
+| `global-banner-03.jpg` | GLOBAL banner, slide 3 — shown on any page whose own slide-3 picture is missing (and its video can't play) |
+
 | `home-registration-banner.jpg` | Background image of the "Register as a Driver" section |
 | `register-photo-upload-bg.jpg` | Background of the top "Upload your profile photo" button on Registration Step 3 (a soft-green overlay sits on top so the text stays readable; if missing, the plain soft-green color is shown) |
 

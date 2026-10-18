@@ -62,6 +62,7 @@ project/
 │   ├── auth.js           # driver session/login state
 │   ├── search.js         # shared search-matching helpers (name / phone)
 │   ├── app.js            # router, toasts, modal, header wiring, service worker registration
+│   ├── clock.js          # live date + 24-hour clock bar with Bangla and Hijri dates on the Home page (EN/বাংলা)
 │   ├── pwa-install.js    # "Add to Home Screen" banner + "new version ready" banner
 │   ├── drivers.js        # home, banners, bazar/vehicle selection, driver lists
 │   │                     # (bazar, Emergency, Doctor, Other Section), driver detail, search
@@ -72,7 +73,7 @@ project/
 │   ├── images/           # og-cover.jpg (social-share cover image)
 │   ├── brand/            # logo, favicons, PWA icons (see its own README)
 │   ├── icons/            # favicon.svg, sacarmart-logo.svg
-│   ├── home-banners/     # banner pictures + banner-videos.js (see its own README)
+│   ├── banner-images/    # banner pictures + banner-videos.js (see its own README)
 │   └── local-photos/     # optional bundled photos, see §5.8
 │       ├── markets/      #   <market-slug>.jpg / <market-slug>-bg.jpg
 │       ├── vehicles/     #   <vehicle-slug>.jpg (driver vehicle categories only)
@@ -424,8 +425,8 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 
 ## 5.5 Banners, section backgrounds & footer social links
 
-All banner pictures live in `assets/home-banners/` and all banner videos are
-set in `assets/home-banners/banner-videos.js` — see that folder's own
+All banner pictures live in `assets/banner-images/` and all banner videos are
+set in `assets/banner-images/banner-videos.js` — see that folder's own
 `README.md` for the exact filenames. Nothing needs a code change, and a
 missing file never shows a broken-image icon.
 

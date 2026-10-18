@@ -26,7 +26,7 @@ here simply shows its emoji icon, exactly as before.
 For a card you add later, use the `id` written on its line (e.g. `id: "farm"` -> `farm.jpg`).
 
 Other Section categories use their own slug (the text after `/other/` in the page
-address), e.g. `mosque.jpg`. The same file is used as slide 1 of that category's banner.
+address), e.g. `mosque.jpg`. The same file is used as slide 1 of that category's banner (also for the Emergency, Doctor, Other and Drivers pages: `emergency.jpg`, `doctor.jpg`, `other.jpg`, `drivers.jpg`).
 A card id and a category slug that are the same share one picture.
 Every file must be `.jpg`, roughly 2:1 (wider than tall), like the vehicle photos.
 

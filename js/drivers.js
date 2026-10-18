@@ -683,9 +683,9 @@
     ]);
   }
 
-  function homeCategoryCard(item, state) {
+  function homeCategoryCard(item, info) {
     const name = pickText(item.en, item.bn);
-    const soon = state === "soon";
+    const soon = info.state === "soon";
     const go = () => {
       if (item.type === "drivers") {
         const slug = effectiveMarketSlug();
@@ -724,13 +724,23 @@
         speakerButton(name)
       ])
     ];
-    if (soon) children.push(Utils.el("div", { class: "home-cat__soon", text: Lang.t("home.comingSoon") }));
+    if (soon) {
+      children.push(Utils.el("div", { class: "home-cat__soon", text: Lang.t("home.comingSoon") }));
+    } else if (info.online !== null && info.online !== undefined) {
+      children.push(Utils.el("div", { class: "chip-card__online" }, [
+        Utils.el("span", { class: "online-dot", "aria-hidden": "true" }),
+        Utils.el("span", { text: Lang.t("vehicle.onlineCount", { n: info.online }) })
+      ]));
+    }
     return Utils.el("div", props, children);
   }
+
+  let lastKnownDirectory = null;
 
   async function renderHome(app) {
     app.innerHTML = "";
 
+    if (window.Clock) app.appendChild(window.Clock.build());
     app.appendChild(buildBanner(homeBannerSlides()));
 
     const bazarZone = Utils.el("section", { class: "section section--flush-top container home-bazar" });
@@ -745,6 +755,7 @@
     let markets = Api.peekMarkets() || null;
     let vehicles = Api.peekVehicleCategories() || null;
     let directory = Api.peekDriverDirectory() || null;
+    if (directory) lastKnownDirectory = directory;
     let pickerOpen = false;
 
     function emergencyButton() {
@@ -819,17 +830,40 @@
       ]));
     }
 
-    function categoryState(item) {
-      if (item.type !== "other" && item.type !== "otherAll") return "ready";
-      if (!vehicles || !directory) return "pending";
+    function categoryInfo(item) {
+      const list = directory || lastKnownDirectory;
+      if (!vehicles || !list) return { state: "pending", online: null };
       const mk = effectiveMarketSlug();
-      const hasData = (vehicleSlug) => directory.some((d) =>
-        inMarket(d, mk) && Utils.splitMulti(d.vehicleType).includes(vehicleSlug));
-      if (item.type === "other") {
-        const v = vehicles.find((x) => x.slug === item.slug && x.isOther);
-        return v && hasData(item.slug) ? "ready" : "soon";
+      const count = (match) => {
+        let total = 0;
+        let online = 0;
+        list.forEach((d) => {
+          if (!match(d)) return;
+          total++;
+          if (d.availability === "active") online++;
+        });
+        return { total, online };
+      };
+      const hasSlug = (d, slugs) => Utils.splitMulti(d.vehicleType).some((x) => slugs.has(x));
+      let result;
+      if (item.type === "drivers") {
+        const slugs = new Set(vehicles.filter((v) => !v.isOther && v.slug !== DOCTOR_CATEGORY_SLUG).map((v) => v.slug));
+        result = count((d) => inMarket(d, mk) && hasSlug(d, slugs));
+      } else if (item.type === "doctor") {
+        result = count((d) => d.doctor === true && inMarket(d, mk));
+      } else if (item.type === "emergency") {
+        result = count((d) => d.emergency === true);
+      } else if (item.type === "other") {
+        const known = vehicles.some((x) => x.slug === item.slug && x.isOther);
+        const slugs = new Set([item.slug]);
+        result = known ? count((d) => inMarket(d, mk) && hasSlug(d, slugs)) : { total: 0, online: 0 };
+      } else if (item.type === "otherAll") {
+        const slugs = new Set(vehicles.filter((v) => v.isOther && !isHiddenFromOther(v.slug)).map((v) => v.slug));
+        result = count((d) => inMarket(d, mk) && hasSlug(d, slugs));
+      } else {
+        return { state: "ready", online: null };
       }
-      return vehicles.some((v) => v.isOther && !isHiddenFromOther(v.slug) && hasData(v.slug)) ? "ready" : "soon";
+      return result.total ? { state: "ready", online: result.online } : { state: "soon", online: null };
     }
 
     function paintCategories() {
@@ -841,7 +875,7 @@
       if (current) headChildren.push(Utils.el("p", { text: Lang.t("home.categorySub", { bazar: marketName(current) }) }));
       categoryZone.appendChild(Utils.el("div", { class: "section-head" }, headChildren));
       categoryZone.appendChild(Utils.el("div", { class: "chip-grid home-cat-grid" },
-        items.map((item) => homeCategoryCard(item, categoryState(item)))));
+        items.map((item) => homeCategoryCard(item, categoryInfo(item)))));
     }
 
     paintBazar();
@@ -865,6 +899,7 @@
         const loaded = await Promise.all([Api.getVehicleCategories(), Api.getDriverDirectory()]);
         vehicles = loaded[0];
         directory = loaded[1];
+        lastKnownDirectory = directory;
         paintCategories();
       } catch (err) {
       }
@@ -1185,7 +1220,7 @@
   function homeBannerSlides() {
     const images = window.NOBI_CONFIG.BANNER_IMAGES || {};
     const videos = window.BANNER_VIDEOS || {};
-    const slide2 = images.slide2 || "assets/home-banners/home-banner-02.jpg";
+    const slide2 = images.slide2 || "assets/banner-images/home-banner-02.jpg";
     return [
       { type: "dynamic", src: images.slide1 },
       { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: true },
@@ -1193,42 +1228,40 @@
     ];
   }
 
-  function emergencyBannerSlides() {
-    const images = window.NOBI_CONFIG.EMERGENCY_BANNER_IMAGES || {};
+  function categoryBannerSlides(configKey, slug, videoKey) {
+    const images = window.NOBI_CONFIG[configKey] || {};
     const videos = window.BANNER_VIDEOS || {};
-    const slide2 = images.slide2 || "assets/home-banners/emergency-banner-02.jpg";
+    const base = "assets/banner-images/category-" + slug + "-banner-";
+    const slide2 = images.slide2 || base + "02.jpg";
     return [
-      { type: "image", srcs: [images.slide1 || "assets/home-banners/emergency-banner-01.jpg"], placeholder: false },
+      { type: "image", srcs: [Utils.localFixtureUrl("category", slug)], placeholder: false },
       { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: false },
-      { type: "video", videoUrl: videos.emergency03, fallback: images.slide3 || "assets/home-banners/emergency-banner-03.jpg", placeholder: false }
+      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || base + "03.jpg", placeholder: false }
     ];
   }
 
+  function emergencyBannerSlides() {
+    return categoryBannerSlides("EMERGENCY_BANNER_IMAGES", "emergency", "emergency03");
+  }
+
   function doctorBannerSlides() {
-    const images = window.NOBI_CONFIG.DOCTOR_BANNER_IMAGES || {};
-    const videos = window.BANNER_VIDEOS || {};
-    const slide2 = images.slide2 || "assets/home-banners/doctor-banner-02.jpg";
-    return [
-      { type: "image", srcs: [images.slide1 || "assets/home-banners/doctor-banner-01.jpg"], placeholder: false },
-      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: false },
-      { type: "video", videoUrl: videos.doctor03, fallback: images.slide3 || "assets/home-banners/doctor-banner-03.jpg", placeholder: false }
-    ];
+    return categoryBannerSlides("DOCTOR_BANNER_IMAGES", "doctor", "doctor03");
   }
 
   function sectionBannerSlides(configKey, prefix, videoKey) {
     const images = window.NOBI_CONFIG[configKey] || {};
     const videos = window.BANNER_VIDEOS || {};
-    const slide2 = images.slide2 || "assets/home-banners/" + prefix + "-banner-02.jpg";
+    const slide2 = images.slide2 || "assets/banner-images/" + prefix + "-banner-02.jpg";
     return [
-      { type: "image", srcs: [images.slide1 || "assets/home-banners/" + prefix + "-banner-01.jpg"], placeholder: false },
+      { type: "image", srcs: [images.slide1 || "assets/banner-images/" + prefix + "-banner-01.jpg"], placeholder: false },
       { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: false },
-      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || "assets/home-banners/" + prefix + "-banner-03.jpg", placeholder: false }
+      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || "assets/banner-images/" + prefix + "-banner-03.jpg", placeholder: false }
     ];
   }
 
   function vehicleBannerSlides(slug, isOther) {
     const videos = (window.BANNER_VIDEOS && window.BANNER_VIDEOS.vehicle03) || {};
-    const base = "assets/home-banners/vehicle-" + slug + "-banner-";
+    const base = "assets/banner-images/" + (isOther ? "category-" : "vehicle-") + slug + "-banner-";
     return [
       { type: "image", srcs: [Utils.localFixtureUrl(isOther ? "category" : "vehicle", slug)], placeholder: false },
       { type: "image", srcs: [base + "02.gif", base + "02.jpg"], placeholder: false },
@@ -1616,15 +1649,20 @@
       vehicleSpeaker
     ]);
 
-    const section = Utils.el("section", { class: "section container" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
+      buildBanner(categoryBannerSlides("DRIVERS_BANNER_IMAGES", "drivers", "drivers03"), { emergency: true }),
       crumb,
       Utils.el("div", { class: "section-head" }, [
         vehicleHeadingRow,
         Utils.el("p", { "data-market-sub": "true", text: knownMarket ? Lang.t("vehicle.chooseSub", { market: marketName(knownMarket) }) : "" })
-      ]),
+      ])
+    ]);
+    const section = Utils.el("section", { class: "section container" }, [
+      bannerZone,
       allCachedReady ? buildBody(knownMarket, cachedVehicles, cachedDirectory) : ViewHelpers.loadingBlock(Lang.t("vehicle.loading"))
     ]);
     app.appendChild(section);
+    holdSearchBarPosition(bannerZone);
 
     if (allCachedReady) return;
 
@@ -1638,7 +1676,7 @@
         { label: Lang.t("nav.markets"), path: "/markets" },
         { label: marketName(market) }
       ]);
-      section.replaceChild(freshCrumb, section.firstChild);
+      bannerZone.replaceChild(freshCrumb, crumb);
       section.querySelector("[data-market-sub]").textContent = Lang.t("vehicle.chooseSub", { market: marketName(market) });
       vehicleSpeaker.setSpokenText(vehicleHeaderSpeech(marketName(market)));
       section.replaceChild(buildBody(market, vehicles, directory), section.lastChild);
@@ -1815,7 +1853,7 @@
     const ready = cachedVehicles && cachedDirectory;
 
     const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
-      buildBanner(sectionBannerSlides("OTHER_BANNER_IMAGES", "other", "other03"), { emergency: true }),
+      buildBanner(categoryBannerSlides("OTHER_BANNER_IMAGES", "other", "other03"), { emergency: true }),
       ViewHelpers.breadcrumb([
         { label: Lang.t("nav.home"), path: "/" },
         { label: Lang.t("other.sectionHeading") }

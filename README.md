@@ -75,7 +75,8 @@ project/
 │   ├── home-banners/     # banner pictures + banner-videos.js (see its own README)
 │   └── local-photos/     # optional bundled photos, see §5.8
 │       ├── markets/      #   <market-slug>.jpg / <market-slug>-bg.jpg
-│       ├── vehicles/     #   <vehicle-slug>.jpg
+│       ├── vehicles/     #   <vehicle-slug>.jpg (driver vehicle categories only)
+│       ├── categories/   #   home cards + Other Section categories <slug>.jpg
 │       └── profilePhoto/ #   <Driver ID>.jpg
 ├── config/
 │   ├── config.example.js # documented configuration template
@@ -435,7 +436,8 @@ missing file never shows a broken-image icon.
   - Slide 1 — Home: automatic headline text (follows the language toggle)
     on a solid background, with `home-banner-01.jpg` behind it if present.
     Other pages: a picture only (`<page>-banner-01.jpg`; on vehicle lists,
-    the category photo from `assets/local-photos/vehicles/<slug>.jpg`).
+    the category photo from `assets/local-photos/vehicles/<slug>.jpg`, or from
+    `assets/local-photos/categories/<slug>.jpg` for Other Section categories).
   - Slide 2 — an animated `.gif` is tried first, then the `.jpg`.
   - Slide 3 — a YouTube video (link in `banner-videos.js`) plays muted and
     automatically, with a small speaker button to turn the sound on/off; the
@@ -520,7 +522,8 @@ case-sensitive on GitHub Pages.
 | Folder | File name | Used for |
 |---|---|---|
 | `assets/local-photos/markets/` | `<market-slug>.jpg`, `<market-slug>-bg.jpg` | bazar card photo / card background |
-| `assets/local-photos/vehicles/` | `<vehicle-slug>.jpg` | vehicle category photo (also slide 1 of that category's banner) |
+| `assets/local-photos/vehicles/` | `<vehicle-slug>.jpg` | driver vehicle category photo only (also slide 1 of that category's banner) |
+| `assets/local-photos/categories/` | `<slug>.jpg` | home category cards and Other Section category photos (also slide 1 of that category's banner) |
 | `assets/local-photos/profilePhoto/` | `<Driver ID>.jpg` (e.g. `D1111.jpg`) | driver/doctor photo everywhere it appears |
 
 The slug is the text after `/markets/` (or after the bazar name) in the page

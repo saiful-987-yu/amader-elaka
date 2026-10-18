@@ -877,7 +877,7 @@
       Utils.el("span", { class: "chip-collage__icon", html: isMarket ? Icons.map : Icons.vehicle(item.slug) })
     ]);
     const imgUrl = Utils.resolveImageUrl(item.imageUrl);
-    const localImgUrl = Utils.localFixtureUrl(isMarket ? "market" : "vehicle", item.slug);
+    const localImgUrl = Utils.localFixtureUrl(isMarket ? "market" : (item.isOther ? "category" : "vehicle"), item.slug);
     if (imgUrl || localImgUrl) {
       const img = Utils.el("img", { alt: "", loading: "lazy" });
       tile.appendChild(img);
@@ -1043,7 +1043,7 @@
   function vehicleChip(v, onSelect, onlineCount) {
     const topChildren = [Utils.el("div", { class: "chip-card__icon", html: Icons.vehicle(v.slug) })];
     const imgUrl = Utils.resolveImageUrl(v.imageUrl);
-    const localImgUrl = Utils.localFixtureUrl("vehicle", v.slug);
+    const localImgUrl = Utils.localFixtureUrl(v.isOther ? "category" : "vehicle", v.slug);
     if (imgUrl || localImgUrl) {
       const img = Utils.el("img", { alt: "", loading: "lazy" });
       const imgWrap = Utils.el("div", { class: "chip-card__image" }, [img]);
@@ -1226,11 +1226,11 @@
     ];
   }
 
-  function vehicleBannerSlides(slug) {
+  function vehicleBannerSlides(slug, isOther) {
     const videos = (window.BANNER_VIDEOS && window.BANNER_VIDEOS.vehicle03) || {};
     const base = "assets/home-banners/vehicle-" + slug + "-banner-";
     return [
-      { type: "image", srcs: [Utils.localFixtureUrl("vehicle", slug)], placeholder: false },
+      { type: "image", srcs: [Utils.localFixtureUrl(isOther ? "category" : "vehicle", slug)], placeholder: false },
       { type: "image", srcs: [base + "02.gif", base + "02.jpg"], placeholder: false },
       { type: "video", videoUrl: videos[slug], fallback: base + "03.jpg", placeholder: false }
     ];
@@ -1876,7 +1876,7 @@
 
     const resultsWrap = Utils.el("div", {});
     const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
-      buildBanner(vehicleBannerSlides(params.vehicle), { emergency: true }),
+      buildBanner(vehicleBannerSlides(params.vehicle, true), { emergency: true }),
       crumbNode,
       driverListHead(knownVehicle ? vehicleName(knownVehicle) : "", Lang.t("other.listSub"))
     ]);
@@ -1931,7 +1931,7 @@
     let renderedCards = new Map();
 
     function renderResults(list, query) {
-      section.querySelector("[data-count]").textContent = Lang.t("drivers.count", { count: list.length });
+      section.querySelector("[data-count]").textContent = Lang.t("profiles.count", { count: list.length });
       if (!list.length) {
         resultsWrap.innerHTML = "";
         renderedCards.clear();
@@ -1984,8 +1984,8 @@
   async function renderSearch(app) {
     app.innerHTML = "";
     const searchInput = Utils.el("input", {
-      type: "search", "data-i18n-placeholder": "search.placeholder",
-      placeholder: Lang.t("search.placeholder"), "aria-label": Lang.t("search.heading")
+      type: "search", "data-i18n-placeholder": "search.placeholderOther",
+      placeholder: Lang.t("search.placeholderOther"), "aria-label": Lang.t("search.heading")
     });
     const resultsWrap = Utils.el("div", { class: "mt-5" });
     const section = Utils.el("section", { class: "section container" }, [
@@ -2058,8 +2058,8 @@
       { label: Lang.t("emergency.heading") }
     ]);
     const searchInput = Utils.el("input", {
-      type: "search", "data-i18n-placeholder": "search.placeholder",
-      placeholder: Lang.t("search.placeholder"), "aria-label": Lang.t("search.heading")
+      type: "search", "data-i18n-placeholder": "search.placeholderOther",
+      placeholder: Lang.t("search.placeholderOther"), "aria-label": Lang.t("search.heading")
     });
     const searchBar = Utils.el("div", { class: "search-bar" }, [
       Utils.el("span", { html: Icons.search }), searchInput
@@ -2107,7 +2107,7 @@
         resultsWrap.innerHTML = "";
         let shown = Search.filterLocal(list, query);
         if (availableOnlyToggle.checked) shown = shown.filter((d) => d.availability === "active");
-        countNode.textContent = Lang.t("drivers.count", { count: shown.length });
+        countNode.textContent = Lang.t("profiles.count", { count: shown.length });
         if (!shown.length) {
           resultsWrap.appendChild(ViewHelpers.emptyBlock({ message: Lang.t("empty.noSearchResults") }));
           return;

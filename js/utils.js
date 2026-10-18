@@ -223,8 +223,9 @@
     if (kind === "market") return "assets/local-photos/markets/" + slug + ".jpg";
     if (kind === "marketBg") return "assets/local-photos/markets/" + slug + "-bg.jpg";
     if (kind === "vehicle") return "assets/local-photos/vehicles/" + slug + ".jpg";
+    if (kind === "category") return "assets/local-photos/categories/" + slug + ".jpg";
     if (kind === "homeNoticeBg") return "assets/local-photos/home-notice/notice-bg.jpg";
-    if (kind === "homeCategory") return "assets/local-photos/home-categories/" + slug + ".jpg";
+    if (kind === "homeCategory") return "assets/local-photos/categories/" + slug + ".jpg";
     if (kind === "profile") return "assets/local-photos/profilePhoto/" + encodeURIComponent(String(slug).trim()) + ".jpg";
     return null;
   };

@@ -80,6 +80,7 @@
       "drivers.backToVehicles": "Change Vehicle Type",
       "drivers.count": "{count} drivers found",
       "doctors.count": "{count} doctors found",
+      "profiles.count": "{count} Profiles Online",
       "drivers.filterAvailableOnly": "Online only",
 
       "status.available": "Online",
@@ -419,6 +420,7 @@
       "drivers.backToVehicles": "যানবাহনের ধরন পরিবর্তন করুন",
       "drivers.count": "{count} জন ড্রাইভার পাওয়া গেছে",
       "doctors.count": "{count} জন ডাক্তার পাওয়া গেছে",
+      "profiles.count": "{count}টি প্রোফাইল অনলাইন",
       "drivers.filterAvailableOnly": "শুধু অনলাইন",
 
       "status.available": "অনলাইন",

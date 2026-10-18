@@ -145,7 +145,7 @@ automatically by the backend when first needed — see below:
 - `Username` / `Password` — **a user logs in directly against their own row here.** There is no separate account sheet at all. `Password` is a SHA-256 hash, never plain text — see "Pending Users" below for how a value gets here in the first place.
 - `Sort Status` — one of `1st`, `2nd`, `3rd`, `4th`, `5th`, `6th`, `7th`, `8th`, `9th`, `10th`, or blank. Offline (Unavailable) profiles always go to the bottom first. Among the rest, this is **the first sort priority**: every `1st` driver appears before every `2nd`, and so on up to `10th`, then everyone left blank. Drivers sharing the same Sort Status are then ordered by `Star Rating` (highest first).
 - `Bengali Name` — shown instead of `Name` whenever the site is in বাংলা mode. Leave it blank and the English `Name` is used as a fallback automatically — a driver never shows with a blank name.
-- `Emergency Contact` — `TRUE` (case-insensitive) adds the driver to the homepage's "Emergency Contact" list regardless of their vehicle type or bazar; `FALSE` or blank keeps them out of it. This never affects their normal listing under their own bazar/vehicle type. This list is ordered by the same `Sort Status` → `Star Rating` rule as a bazar+vehicle-type list — not a separate rule.
+- `Emergency Contact` — `TRUE` (case-insensitive) adds the driver to the "Emergency Contact" list regardless of their vehicle type; the list follows the visitor's chosen bazar, so the driver appears only in the bazars written in their `Bazar` cell (a blank `Bazar` cell means they appear in no bazar's Emergency list). `FALSE` or blank keeps them out of it. This never affects their normal listing under their own bazar/vehicle type. This list is ordered by the same `Sort Status` → `Star Rating` rule as a bazar+vehicle-type list — not a separate rule.
 - `Star Rating` — a number from 0–5 (decimals like `4.2` are fine); shown to customers as rounded stars, never as the raw number, in the driver's own basic info row. Leave empty for 0 stars. This is unrelated to the new Rating/Review system below.
 - `WhatsApp` — controls the WhatsApp button on the driver card/profile: `F` uses the main `Phone`, `A` uses `Alternative Phone`, a real phone number is used directly, `N` or empty hides the button.
 - `Bazar`, `Vehicle Type`, and `Vehicle Image URL` all support **multiple values** in one cell, separated by `, ` (comma + space) — e.g. `Nobi Bazar, Bangla Bazar` or `Motorcycle, CNG, Auto` or `image1.jpg, image2.jpg, image3.jpg`. A driver with multiple bazars/vehicle types shows up under every one of them; multiple vehicle images become a clickable thumbnail gallery on the driver detail screen. A single plain value (no comma) still works exactly as before.
@@ -232,7 +232,9 @@ goes into `Driver Image URL`. (2) The Google Form route configured in
 needs a Google sign-in and opens in its own tab; `MOBILE_ENTRY_ID`
 pre-fills the mobile number there. The first time `Code.gs` is deployed (or
 after changing it), the script owner must authorize the Drive permission
-once.
+once. Step 3 order: (1) profile photo (with the "OR send it on WhatsApp /
+use a link or PIN" option), (2) social media links, (3) other photos
+(vehicle, shop, place).
 
 **Admin Editor History**
 `Date Time | Admin Driver ID | Admin Name | Target Type | Target ID | Target Name | Old 1 | New 1 | Old 2 | New 2 | ...`
@@ -274,7 +276,10 @@ seconds while it is on screen, when the app comes back to the foreground,
 and immediately after an item is approved. It is hidden when the count is 0.
 
 To edit an existing user, open their card in the normal bazar → vehicle →
-driver list while Admin Mode is on and use the pen icon on the card.
+driver list while Admin Mode is on and use the pen icon on the card. When
+editing an approved driver/doctor, Username is not required (name and phone
+are); editing a pending application still requires a Username, because
+approval needs it.
 
 ### 3.3 Deploy the Apps Script backend
 
@@ -332,11 +337,17 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   has that `Vehicle Type`. The bazar does not matter. Adding a new
   category = one new row in `Vehicle Categories`; no code change.
 - **Emergency Contact** (`#/emergency`): every profile with
-  `Emergency Contact = TRUE` (see §3.2).
+  `Emergency Contact = TRUE` (see §3.2) whose `Bazar` includes the chosen
+  bazar.
 - **Find a Doctor** (`#/doctor`): every profile with `Doctor Status = TRUE`
   (see §3.5).
 - All lists use the same order: offline profiles last, then `Sort Status`,
   then `Star Rating`.
+- **Card info line:** vehicle-type lists (CNG, Auto, ...) show the category
+  and the service area; Other Section lists show only the service area;
+  Doctor cards show the degree/qualification (if any) and the service area;
+  the Emergency list shows the category as before; site search shows the
+  category only for vehicle drivers.
 - **Search** (`#/search` and the search boxes on the lists) matches the
   driver's name or phone number.
 
@@ -347,12 +358,16 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 - The chosen bazar is remembered in the browser (`area.selectedMarket`). On the
   first visit a chooser appears, with a "Skip" button that uses the default bazar
   (`DEFAULT_MARKET_SLUG`). The home bar shows the bazar and lets people change it.
-- The home page order is: hero, banner, bazar bar, notices, category cards.
+- The home page order is: hero, banner, a bar with the "Notices & News"
+  header (left, 50%, gently animated, its speaker button reads all the notices
+  aloud) and the bazar button (right, 50%), the notices, then the category
+  cards under "Choose what you need". While the bazar chooser is open (after
+  tapping "Change"), the category cards are hidden until a bazar is picked.
   Notices and category cards are edited in `assets/home-content/home-content.js`
   (no backend work). A card for an Other category shows "Coming soon" until at
   least one approved profile exists for it in the chosen bazar.
-- Drivers, doctors, the Other Section and site search follow the chosen bazar.
-  The Emergency list is not filtered by bazar.
+- Drivers, doctors, the Emergency list, the Other Section and site search
+  follow the chosen bazar.
 - The Other Section page lists only categories that do not already have a card
   on the home page.
 - The top-menu "Drivers" link goes straight to the chosen bazar's vehicle types.
@@ -446,14 +461,23 @@ missing file never shows a broken-image icon.
     offline, empty link) the `…-banner-03.jpg` picture is shown instead.
     Vehicle-category video links go in the `vehicle03` list, one line per
     category slug.
+- **Global banner (fallback):** put `global-banner-01.jpg`,
+  `global-banner-02.gif` / `global-banner-02.jpg` and `global-banner-03.jpg`
+  in `assets/banner-images/`. Wherever a page's own slide 1, 2 or 3 picture
+  is missing, the global picture with the same number is shown instead
+  (Home slide 1 is the text slide and is not affected). Optional overrides:
+  `GLOBAL_BANNER_IMAGES` (`slide1`, `slide2Gif`, `slide2`, `slide3`) in
+  `config/config.js`.
 - **Timing and touch:** every slide stays 5 seconds (`BANNER_SLIDE_MS` in
   `js/drivers.js`); the banner also responds to touch swipe (left = next,
   right = previous), and swiping restarts the timer.
 - **Config:** `BANNER_IMAGES`, `EMERGENCY_BANNER_IMAGES`,
   `DOCTOR_BANNER_IMAGES`, `MARKET_BANNER_IMAGES`, `OTHER_BANNER_IMAGES` and
   `SECTION_BACKGROUNDS` in `config/config.js` hold the file paths. Banners
-  on non-home pages sit behind the breadcrumb/heading and never move the
-  search bar.
+  on non-home pages sit behind the breadcrumb (and the heading/subtitle on
+  pages with a search bar) and never move the search bar, which always keeps
+  a 12 px gap below the banner. On the Drivers (vehicle types) and Other
+  Section category pages the heading and subtitle sit just below the banner.
 - **Section backgrounds:** the homepage bands "Register as a Driver",
   "Other Section" and "Find a Doctor" use `home-registration-banner.jpg`,
   `home-other-banner.jpg` and `home-doctor-banner.jpg`, and the top button
@@ -504,7 +528,7 @@ in the browser's `localStorage` (not just in memory), so:
   intercepted.
 - When a new version of the site is deployed, the visitor sees a "new
   version is ready" banner with a refresh button.
-- **Cache version:** `CACHE_VERSION` at the top of `sw.js` (currently `v5`)
+- **Cache version:** `CACHE_VERSION` at the top of `sw.js` (currently `v6`)
   decides when visitors' old cached files are replaced. Change it only when
   you deliberately want every visitor to download the new app files; adding
   photos or banner files, or editing the Google Sheet, never needs it.

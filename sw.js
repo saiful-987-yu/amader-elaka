@@ -37,7 +37,9 @@ const APP_SHELL = [
   "./assets/brand/apple-touch-icon.png",
   "./assets/brand/pwa-icon-192.png",
   "./assets/brand/pwa-icon-512.png",
-  "./assets/icons/favicon.svg"
+  "./assets/icons/favicon.svg",
+  "./assets/icons/sacarmart-logo.svg",
+  "./assets/banner-images/register-photo-upload-bg.jpg"
 ];
 
 self.addEventListener("install", (event) => {

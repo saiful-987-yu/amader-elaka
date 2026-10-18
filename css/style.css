@@ -437,7 +437,12 @@ a:hover { text-decoration: underline; }
    .banner-zone, so it takes no space and nothing below it (search bar, list)
    moves. Its bottom edge stays just above the search bar; it grows upward
    into the empty space under the site header. */
-.banner-zone { position: relative; }
+.banner-zone {
+  position: relative;
+  --banner-w: calc(100vw - 2 * clamp(8px, 2vw, 16px));
+  --zone-min: calc(var(--banner-w) / 2 - var(--space-6) - var(--space-2) + var(--space-1) + var(--zone-lift, 0px));
+  min-height: var(--zone-min);
+}
 .banner-zone > .breadcrumb,
 .banner-zone > .section-head { position: relative; z-index: 1; pointer-events: none; }
 .banner-zone .breadcrumb__link,
@@ -446,12 +451,11 @@ a:hover { text-decoration: underline; }
 .banner-zone > .section-head { padding-left: 42px; }
 .banner--emergency {
   position: absolute;
-  left: var(--space-4);
-  right: var(--space-4);
+  left: 0;
+  right: 0;
   bottom: calc(-1 * var(--space-2));
   margin: 0 auto;
   aspect-ratio: 2 / 1;
-  max-height: calc(100% + var(--space-6) + var(--space-2) - var(--space-1) - var(--zone-lift, 0px));
   padding: 0;
   z-index: 0;
 }
@@ -459,13 +463,11 @@ a:hover { text-decoration: underline; }
 .banner--emergency .banner__dots { position: absolute; left: 0; right: 0; bottom: 6px; margin: 0; z-index: 4; }
 /* Standard banner height for every section (Emergency, Doctor, Market, Other and any future one): a zone with short text gets the same height as the Emergency/Doctor zone, so its banner is the same size. Add class "banner-zone--standard" to any new banner-zone. */
 @media (max-width: 479px) {
-  .banner-zone--standard { min-height: 147px; margin-bottom: var(--space-4); }
-}
-@media (min-width: 480px) {
-  .banner--emergency { left: 50%; right: auto; width: 340px; margin: 0; transform: translateX(-50%); }
+  .banner-zone--standard { min-height: max(147px, var(--zone-min)); margin-bottom: var(--space-4); }
 }
 @media (min-width: 720px) {
-  .banner--emergency { width: 300px; }
+  .banner-zone { --banner-w: calc(640px - 2 * clamp(8px, 2vw, 16px)); }
+  .banner--emergency { left: 50%; right: auto; width: var(--banner-w); margin: 0; transform: translateX(-50%); }
 }
 
 /* Emergency page text over the banner: bright colours with a dark outline,

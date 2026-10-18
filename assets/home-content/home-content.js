@@ -21,7 +21,7 @@
 
   HOME CATEGORY CARD PHOTOS
   - Each card above can show a photo next to its emoji icon (same look as the bazar and vehicle cards).
-  - Put a .jpg in assets/local-photos/home-categories/ named exactly like the card's id:
+  - Put a .jpg in assets/local-photos/categories/ named exactly like the card's id:
     drivers.jpg, doctor.jpg, emergency.jpg, shop.jpg, mosque.jpg, notable.jpg, sports.jpg, education.jpg, other.jpg
     (for a new card, use the id you wrote on its line, e.g. id: "farm" -> farm.jpg).
   - No file = the card simply shows its emoji icon, as before. No code change or backend work is needed.

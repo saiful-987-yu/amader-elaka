@@ -110,58 +110,63 @@ window.NOBI_CONFIG = {
   // it's used as that slide's background image instead. Slides 2/3 are
   // plain images, falling back to a clean placeholder if their file is
   // missing — never a broken image. Drop images into
-  // /assets/home-banners/ with these exact filenames (see that
+  // /assets/banner-images/ with these exact filenames (see that
   // folder's own README).
   // Slide 2 tries slide2Gif first, then slide2 (.jpg). Slide 3 plays the
-  // video from /assets/home-banners/banner-videos.js first; slide3 (.jpg)
+  // video from /assets/banner-images/banner-videos.js first; slide3 (.jpg)
   // is shown if the video can't play.
   BANNER_IMAGES: {
-    slide1: "assets/home-banners/home-banner-01.jpg",
-    slide2Gif: "assets/home-banners/home-banner-02.gif",
-    slide2: "assets/home-banners/home-banner-02.jpg",
-    slide3: "assets/home-banners/home-banner-03.jpg"
+    slide1: "assets/banner-images/home-banner-01.jpg",
+    slide2Gif: "assets/banner-images/home-banner-02.gif",
+    slide2: "assets/banner-images/home-banner-02.jpg",
+    slide3: "assets/banner-images/home-banner-03.jpg"
   },
 
-  // Emergency page banner (same folder, same rules as the Home banner).
+  // Emergency, Doctor and Drivers (vehicle category list) page banners.
+  // Slide 1 is the category photo from assets/local-photos/categories/<slug>.jpg
+  // (emergency.jpg, doctor.jpg, drivers.jpg). Slides 2/3 live in this folder
+  // as category-<slug>-banner-02/03.
   EMERGENCY_BANNER_IMAGES: {
-    slide1: "assets/home-banners/emergency-banner-01.jpg",
-    slide2Gif: "assets/home-banners/emergency-banner-02.gif",
-    slide2: "assets/home-banners/emergency-banner-02.jpg",
-    slide3: "assets/home-banners/emergency-banner-03.jpg"
+    slide2Gif: "assets/banner-images/category-emergency-banner-02.gif",
+    slide2: "assets/banner-images/category-emergency-banner-02.jpg",
+    slide3: "assets/banner-images/category-emergency-banner-03.jpg"
   },
 
-  // Doctor page banner (same folder, same rules as the Emergency banner).
   DOCTOR_BANNER_IMAGES: {
-    slide1: "assets/home-banners/doctor-banner-01.jpg",
-    slide2Gif: "assets/home-banners/doctor-banner-02.gif",
-    slide2: "assets/home-banners/doctor-banner-02.jpg",
-    slide3: "assets/home-banners/doctor-banner-03.jpg"
+    slide2Gif: "assets/banner-images/category-doctor-banner-02.gif",
+    slide2: "assets/banner-images/category-doctor-banner-02.jpg",
+    slide3: "assets/banner-images/category-doctor-banner-03.jpg"
+  },
+
+  DRIVERS_BANNER_IMAGES: {
+    slide2Gif: "assets/banner-images/category-drivers-banner-02.gif",
+    slide2: "assets/banner-images/category-drivers-banner-02.jpg",
+    slide3: "assets/banner-images/category-drivers-banner-03.jpg"
   },
 
   // Markets page and Other Section page banners (same folder, same rules).
   MARKET_BANNER_IMAGES: {
-    slide1: "assets/home-banners/market-banner-01.jpg",
-    slide2Gif: "assets/home-banners/market-banner-02.gif",
-    slide2: "assets/home-banners/market-banner-02.jpg",
-    slide3: "assets/home-banners/market-banner-03.jpg"
+    slide1: "assets/banner-images/market-banner-01.jpg",
+    slide2Gif: "assets/banner-images/market-banner-02.gif",
+    slide2: "assets/banner-images/market-banner-02.jpg",
+    slide3: "assets/banner-images/market-banner-03.jpg"
   },
   OTHER_BANNER_IMAGES: {
-    slide1: "assets/home-banners/other-banner-01.jpg",
-    slide2Gif: "assets/home-banners/other-banner-02.gif",
-    slide2: "assets/home-banners/other-banner-02.jpg",
-    slide3: "assets/home-banners/other-banner-03.jpg"
+    slide2Gif: "assets/banner-images/category-other-banner-02.gif",
+    slide2: "assets/banner-images/category-other-banner-02.jpg",
+    slide3: "assets/banner-images/category-other-banner-03.jpg"
   },
 
   // Background photo for the Registration and Doctor homepage sections.
   // Falls back to the existing solid color automatically if the file
   // isn't there yet — nothing to configure beyond the filenames.
   SECTION_BACKGROUNDS: {
-    registration: "assets/home-banners/home-registration-banner.jpg",
-    doctor: "assets/home-banners/home-doctor-banner.jpg",
-    other: "assets/home-banners/home-other-banner.jpg",
+    registration: "assets/banner-images/home-registration-banner.jpg",
+    doctor: "assets/banner-images/home-doctor-banner.jpg",
+    other: "assets/banner-images/home-other-banner.jpg",
     // Background of the top "Upload your profile photo" button on
     // Registration Step 3. Missing file = the plain soft-green color.
-    registerPhotoUpload: "assets/home-banners/register-photo-upload-bg.jpg"
+    registerPhotoUpload: "assets/banner-images/register-photo-upload-bg.jpg"
   },
 
   // Footer social links — leave as "#" until a real URL is available.

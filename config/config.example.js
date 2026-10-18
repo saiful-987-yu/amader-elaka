@@ -111,15 +111,15 @@ window.NOBI_CONFIG = {
   // as the Doctor/Registration sections; drop in
   // home-banner-01.jpg and it's used as that slide's background
   // image instead. Slides 2 and 3 are plain images — drop your
-  // own images into /assets/home-banners/ using these exact
+  // own images into /assets/banner-images/ using these exact
   // filenames and they'll appear automatically — no other
   // change needed. Until then, a placeholder is shown so
   // nothing looks broken. See that folder's own README.
   // --------------------------------------------------------
   BANNER_IMAGES: {
-    slide1: "assets/home-banners/home-banner-01.jpg",
-    slide2: "assets/home-banners/home-banner-02.jpg",
-    slide3: "assets/home-banners/home-banner-03.jpg"
+    slide1: "assets/banner-images/home-banner-01.jpg",
+    slide2: "assets/banner-images/home-banner-02.jpg",
+    slide3: "assets/banner-images/home-banner-03.jpg"
   },
 
   // --------------------------------------------------------
@@ -128,10 +128,10 @@ window.NOBI_CONFIG = {
   // automatically if the file isn't there yet.
   // --------------------------------------------------------
   SECTION_BACKGROUNDS: {
-    registration: "assets/home-banners/home-registration-banner.jpg",
-    doctor: "assets/home-banners/home-doctor-banner.jpg",
-    other: "assets/home-banners/home-other-banner.jpg",
-    registerPhotoUpload: "assets/home-banners/register-photo-upload-bg.jpg"
+    registration: "assets/banner-images/home-registration-banner.jpg",
+    doctor: "assets/banner-images/home-doctor-banner.jpg",
+    other: "assets/banner-images/home-other-banner.jpg",
+    registerPhotoUpload: "assets/banner-images/register-photo-upload-bg.jpg"
   },
 
   // --------------------------------------------------------

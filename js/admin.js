@@ -397,7 +397,7 @@
     return nodes;
   }
 
-  const REQUIRED = { driver: ["name", "phone", "username"], pending: ["name", "phone", "username"] };
+  const REQUIRED = { driver: ["name", "phone"], pending: ["name", "phone", "username"] };
 
   function titleFor(kind) {
     if (kind === "pending") return T("Edit Pending Driver", "পেন্ডিং ড্রাইভার এডিট");

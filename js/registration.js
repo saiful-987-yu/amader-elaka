@@ -374,7 +374,7 @@
     linkBox.appendChild(row.control);
     if (hintNode) linkBox.appendChild(hintNode);
     const toggle = altToggleButton(startOpen, (open) => { linkBox.style.display = open ? "" : "none"; });
-    const head = Utils.el("div", { class: "photo-field-head" }, [label, toggle]);
+    const head = Utils.el("div", { class: "photo-field-head photo-field-head--center" }, [label, toggle]);
     row.wrap.insertBefore(linkBox, row.wrap.firstChild);
     row.wrap.insertBefore(uploadBtn, row.wrap.firstChild);
     row.wrap.insertBefore(head, row.wrap.firstChild);
@@ -649,8 +649,8 @@
         altRow
       ].concat(altOpen ? [] : [photoErrorProxy], [
         altBlock,
-        vehiclePhotoField(Utils.clean(data.mobile), !!Utils.clean(data.vehicleImageUrl)),
-        socialLinksField(Utils.clean(data.mobile))
+        socialLinksField(Utils.clean(data.mobile)),
+        vehiclePhotoField(Utils.clean(data.mobile), !!Utils.clean(data.vehicleImageUrl))
       ]);
     }
 

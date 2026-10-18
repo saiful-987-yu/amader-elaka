@@ -120,9 +120,26 @@
     return parts.length ? parts.map((s) => s.toUpperCase()).join(", ") : "—";
   }
 
-  function vehicleServiceLine(driver, vehicleLabel) {
-    const label = vehicleLabel || (driver.doctor && driver.qualification ? driver.qualification : formatMultiUpper(driver.vehicleType));
-    const text = driver.serviceArea ? label + " · " + driver.serviceArea : label;
+  function isVehicleDriver(driver) {
+    if (driver.doctor) return false;
+    const vehicles = Api.peekVehicleCategories();
+    if (!vehicles) return true;
+    const slugs = new Set(vehicles.filter((v) => !v.isOther && v.slug !== DOCTOR_CATEGORY_SLUG).map((v) => v.slug));
+    return Utils.splitMulti(driver.vehicleType).some((x) => slugs.has(x));
+  }
+
+  function cardCategoryText(driver, vehicleLabel, categoryMode) {
+    const degree = driver.doctor && driver.qualification ? driver.qualification : "";
+    if (categoryMode === "none") return "";
+    if (categoryMode === "doctor") return degree;
+    if (categoryMode === "vehicleOnly") return isVehicleDriver(driver) ? (vehicleLabel || formatMultiUpper(driver.vehicleType)) : degree;
+    return vehicleLabel || (degree || formatMultiUpper(driver.vehicleType));
+  }
+
+  function vehicleServiceLine(driver, vehicleLabel, categoryMode) {
+    const label = cardCategoryText(driver, vehicleLabel, categoryMode);
+    const text = label && driver.serviceArea ? label + " · " + driver.serviceArea : (label || driver.serviceArea || "");
+    if (!text) return null;
     return Utils.el("div", { class: "driver-card__meta", title: text, text });
   }
 
@@ -136,7 +153,7 @@
     return Utils.el("div", { class: "driver-card__rating-row" }, parts);
   }
 
-  function driverCard(driver, vehicleLabel, crumbTrail) {
+  function driverCard(driver, vehicleLabel, crumbTrail, categoryMode) {
     const whatsappNumber = Utils.resolveWhatsApp(driver);
     const actions = [
       Utils.el("button", {
@@ -165,7 +182,7 @@
       driverPhotoNode(driver, "small"),
       Utils.el("div", { class: "driver-card__body" }, [
         Utils.el("div", { class: "driver-card__name", text: Utils.driverDisplayName(driver) }),
-        vehicleServiceLine(driver, vehicleLabel),
+        vehicleServiceLine(driver, vehicleLabel, categoryMode),
         experienceRatingRow(driver),
         statusNode(driver),
         Utils.el("div", { class: "driver-card__actions" }, actions)
@@ -758,13 +775,28 @@
     if (directory) lastKnownDirectory = directory;
     let pickerOpen = false;
 
-    function emergencyButton() {
-      return Utils.el("button", {
-        class: "btn btn--danger btn--compact btn--emergency home-bazar__emergency",
-        onClick: () => Router.navigate("/emergency")
-      }, [
-        Utils.el("span", { class: "emergency-icon", "aria-hidden": "true", text: "🚑" }),
-        Utils.el("span", { text: Lang.t("hero.emergencyCta") })
+    function homeNotices() {
+      return (Array.isArray(window.HOME_NOTICES) ? window.HOME_NOTICES : []).filter((n) =>
+        n && (Utils.clean(n.titleEn) || Utils.clean(n.titleBn) || Utils.clean(n.textEn) || Utils.clean(n.textBn)));
+    }
+
+    function noticeSpeech() {
+      return homeNotices().map((n) =>
+        [pickText(n.titleEn, n.titleBn), pickText(n.textEn, n.textBn)].filter(Boolean).join(". ")
+      ).filter(Boolean).join(". ");
+    }
+
+    function noticeBarHead() {
+      if (!homeNotices().length) return null;
+      const heading = Lang.t("home.noticeHeading");
+      return Utils.el("div", { class: "home-bazar__notice-head" }, [
+        Utils.el("span", { class: "home-bazar__notice-title", text: heading }),
+        Utils.el("button", {
+          type: "button", class: "speak-btn",
+          "aria-label": Lang.t("a11y.speak", { text: heading }),
+          onClick: (e) => { e.stopPropagation(); Utils.speak(noticeSpeech(), Lang.current()); },
+          html: Icons.speaker
+        })
       ]);
     }
 
@@ -785,21 +817,22 @@
       const showPicker = needsChoice || pickerOpen;
       const current = markets.find((m) => m.slug === effectiveMarketSlug());
 
+      const noticeHead = noticeBarHead();
       if (!needsChoice && current) {
-        bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar" }, [
+        bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar" + (noticeHead ? " home-bazar__bar--split" : "") }, [
+          noticeHead,
           Utils.el("button", {
             type: "button", class: "home-bazar__current", "aria-expanded": String(showPicker),
-            onClick: () => { pickerOpen = !pickerOpen; paintBazar(); }
+            onClick: () => { pickerOpen = !pickerOpen; paintBazar(); paintCategories(); }
           }, [
             Utils.el("span", { class: "home-bazar__pin", "aria-hidden": "true", html: Icons.map }),
             Utils.el("span", { class: "home-bazar__label", text: Lang.t("home.yourBazar") }),
             Utils.el("strong", { class: "home-bazar__name", text: marketName(current) }),
             Utils.el("span", { class: "home-bazar__change", text: pickerOpen ? Lang.t("home.closeBazar") : Lang.t("home.changeBazar") })
-          ]),
-          emergencyButton()
-        ]));
-      } else {
-        bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar home-bazar__bar--end" }, [emergencyButton()]));
+          ])
+        ].filter(Boolean)));
+      } else if (noticeHead) {
+        bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar home-bazar__bar--split" }, [noticeHead]));
       }
 
       if (showPicker) {
@@ -821,11 +854,9 @@
 
     function paintNotices() {
       noticeZone.innerHTML = "";
-      const list = (Array.isArray(window.HOME_NOTICES) ? window.HOME_NOTICES : []).filter((n) =>
-        n && (Utils.clean(n.titleEn) || Utils.clean(n.titleBn) || Utils.clean(n.textEn) || Utils.clean(n.textBn)));
+      const list = homeNotices();
       if (!list.length) return;
       noticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container" }, [
-        Utils.el("div", { class: "section-head" }, [speakableHeading(Lang.t("home.noticeHeading"))]),
         Utils.el("div", { class: "notice-list" }, list.map(homeNoticeCard))
       ]));
     }
@@ -852,7 +883,7 @@
       } else if (item.type === "doctor") {
         result = count((d) => d.doctor === true && inMarket(d, mk));
       } else if (item.type === "emergency") {
-        result = count((d) => d.emergency === true);
+        result = count((d) => d.emergency === true && inMarket(d, mk));
       } else if (item.type === "other") {
         const known = vehicles.some((x) => x.slug === item.slug && x.isOther);
         const slugs = new Set([item.slug]);
@@ -868,6 +899,7 @@
 
     function paintCategories() {
       categoryZone.innerHTML = "";
+      if (pickerOpen) return;
       const items = Array.isArray(window.HOME_CATEGORIES) ? window.HOME_CATEGORIES : [];
       if (!items.length) return;
       const current = markets && markets.find((m) => m.slug === effectiveMarketSlug());
@@ -1217,14 +1249,22 @@
     return youTubeApiPromise;
   }
 
+  function globalBannerSrcs(slideNumber) {
+    const g = (window.NOBI_CONFIG && window.NOBI_CONFIG.GLOBAL_BANNER_IMAGES) || {};
+    const base = "assets/banner-images/global-banner-";
+    if (slideNumber === 1) return [g.slide1 || base + "01.jpg"];
+    if (slideNumber === 2) return [g.slide2Gif || base + "02.gif", g.slide2 || base + "02.jpg"];
+    return [g.slide3 || base + "03.jpg"];
+  }
+
   function homeBannerSlides() {
     const images = window.NOBI_CONFIG.BANNER_IMAGES || {};
     const videos = window.BANNER_VIDEOS || {};
     const slide2 = images.slide2 || "assets/banner-images/home-banner-02.jpg";
     return [
       { type: "dynamic", src: images.slide1 },
-      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: true },
-      { type: "video", videoUrl: videos.home03, fallback: images.slide3, placeholder: true }
+      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2].concat(globalBannerSrcs(2)), placeholder: true },
+      { type: "video", videoUrl: videos.home03, fallback: images.slide3, fallbackMore: globalBannerSrcs(3), placeholder: true }
     ];
   }
 
@@ -1234,9 +1274,9 @@
     const base = "assets/banner-images/category-" + slug + "-banner-";
     const slide2 = images.slide2 || base + "02.jpg";
     return [
-      { type: "image", srcs: [Utils.localFixtureUrl("category", slug)], placeholder: false },
-      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: false },
-      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || base + "03.jpg", placeholder: false }
+      { type: "image", srcs: [Utils.localFixtureUrl("category", slug)].concat(globalBannerSrcs(1)), placeholder: false },
+      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2].concat(globalBannerSrcs(2)), placeholder: false },
+      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || base + "03.jpg", fallbackMore: globalBannerSrcs(3), placeholder: false }
     ];
   }
 
@@ -1253,9 +1293,9 @@
     const videos = window.BANNER_VIDEOS || {};
     const slide2 = images.slide2 || "assets/banner-images/" + prefix + "-banner-02.jpg";
     return [
-      { type: "image", srcs: [images.slide1 || "assets/banner-images/" + prefix + "-banner-01.jpg"], placeholder: false },
-      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2], placeholder: false },
-      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || "assets/banner-images/" + prefix + "-banner-03.jpg", placeholder: false }
+      { type: "image", srcs: [images.slide1 || "assets/banner-images/" + prefix + "-banner-01.jpg"].concat(globalBannerSrcs(1)), placeholder: false },
+      { type: "image", srcs: [images.slide2Gif || slide2.replace(/\.[a-z0-9]+$/i, ".gif"), slide2].concat(globalBannerSrcs(2)), placeholder: false },
+      { type: "video", videoUrl: videos[videoKey], fallback: images.slide3 || "assets/banner-images/" + prefix + "-banner-03.jpg", fallbackMore: globalBannerSrcs(3), placeholder: false }
     ];
   }
 
@@ -1263,9 +1303,9 @@
     const videos = (window.BANNER_VIDEOS && window.BANNER_VIDEOS.vehicle03) || {};
     const base = "assets/banner-images/" + (isOther ? "category-" : "vehicle-") + slug + "-banner-";
     return [
-      { type: "image", srcs: [Utils.localFixtureUrl(isOther ? "category" : "vehicle", slug)], placeholder: false },
-      { type: "image", srcs: [base + "02.gif", base + "02.jpg"], placeholder: false },
-      { type: "video", videoUrl: videos[slug], fallback: base + "03.jpg", placeholder: false }
+      { type: "image", srcs: [Utils.localFixtureUrl(isOther ? "category" : "vehicle", slug)].concat(globalBannerSrcs(1)), placeholder: false },
+      { type: "image", srcs: [base + "02.gif", base + "02.jpg"].concat(globalBannerSrcs(2)), placeholder: false },
+      { type: "video", videoUrl: videos[slug], fallback: base + "03.jpg", fallbackMore: globalBannerSrcs(3), placeholder: false }
     ];
   }
 
@@ -1415,7 +1455,7 @@
 
     const fallbackHost = Utils.el("div", { class: "banner__fallback" });
     slide.appendChild(fallbackHost);
-    attachImageChain(fallbackHost, [def.fallback], def.placeholder);
+    attachImageChain(fallbackHost, [def.fallback].concat(def.fallbackMore || []), def.placeholder);
 
     const videoId = asClone ? null : youTubeIdFromUrl(def.videoUrl);
     if (!videoId) return { el: slide };
@@ -1649,16 +1689,17 @@
       vehicleSpeaker
     ]);
 
-    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard banner-zone--head-below" }, [
       buildBanner(categoryBannerSlides("DRIVERS_BANNER_IMAGES", "drivers", "drivers03"), { emergency: true }),
-      crumb,
-      Utils.el("div", { class: "section-head" }, [
-        vehicleHeadingRow,
-        Utils.el("p", { "data-market-sub": "true", text: knownMarket ? Lang.t("vehicle.chooseSub", { market: marketName(knownMarket) }) : "" })
-      ])
+      crumb
+    ]);
+    const vehicleHead = Utils.el("div", { class: "section-head" }, [
+      vehicleHeadingRow,
+      Utils.el("p", { "data-market-sub": "true", text: knownMarket ? Lang.t("vehicle.chooseSub", { market: marketName(knownMarket) }) : "" })
     ]);
     const section = Utils.el("section", { class: "section container" }, [
       bannerZone,
+      vehicleHead,
       allCachedReady ? buildBody(knownMarket, cachedVehicles, cachedDirectory) : ViewHelpers.loadingBlock(Lang.t("vehicle.loading"))
     ]);
     app.appendChild(section);
@@ -1721,7 +1762,7 @@
     ]);
 
     const resultsWrap = Utils.el("div", {});
-    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard banner-zone--search" }, [
       buildBanner(vehicleBannerSlides(params.vehicle), { emergency: true }),
       crumbNode,
       driverListHead(knownVehicle ? Lang.t("drivers.heading", { vehicle: vehicleName(knownVehicle) }) : "", Lang.t("drivers.sub"))
@@ -1852,19 +1893,20 @@
     const cachedDirectory = Api.peekDriverDirectory();
     const ready = cachedVehicles && cachedDirectory;
 
-    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard banner-zone--head-below" }, [
       buildBanner(categoryBannerSlides("OTHER_BANNER_IMAGES", "other", "other03"), { emergency: true }),
       ViewHelpers.breadcrumb([
         { label: Lang.t("nav.home"), path: "/" },
         { label: Lang.t("other.sectionHeading") }
-      ]),
-      Utils.el("div", { class: "section-head" }, [
-        speakableHeading(Lang.t("other.sectionHeading")),
-        Utils.el("p", { text: Lang.t("other.chooseSub") })
       ])
+    ]);
+    const otherHead = Utils.el("div", { class: "section-head" }, [
+      speakableHeading(Lang.t("other.sectionHeading")),
+      Utils.el("p", { text: Lang.t("other.chooseSub") })
     ]);
     const section = Utils.el("section", { class: "section container" }, [
       bannerZone,
+      otherHead,
       ready ? buildOtherBody(cachedVehicles, cachedDirectory) : ViewHelpers.loadingBlock(Lang.t("vehicle.loading"))
     ]);
     app.appendChild(section);
@@ -1913,7 +1955,7 @@
     ]);
 
     const resultsWrap = Utils.el("div", {});
-    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--standard banner-zone--search" }, [
       buildBanner(vehicleBannerSlides(params.vehicle, true), { emergency: true }),
       crumbNode,
       driverListHead(knownVehicle ? vehicleName(knownVehicle) : "", Lang.t("other.listSub"))
@@ -1998,7 +2040,7 @@
         if (existing && existing.sig === sig) {
           node = existing.node;
         } else {
-          node = driverCard(d, vehicleName(vehicle), crumbTrail);
+          node = driverCard(d, vehicleName(vehicle), crumbTrail, "none");
           if (existing && existing.node.parentNode) existing.node.parentNode.removeChild(existing.node);
           renderedCards.set(id, { node, sig });
         }
@@ -2047,7 +2089,7 @@
           return;
         }
         resultsWrap.appendChild(Utils.el("p", { class: "result-count", text: Lang.t("search.resultsFor", { query }) }));
-        resultsWrap.appendChild(Utils.el("div", { class: "driver-grid mt-5" }, list.map((d) => driverCard(d))));
+        resultsWrap.appendChild(Utils.el("div", { class: "driver-grid mt-5" }, list.map((d) => driverCard(d, null, null, "vehicleOnly"))));
       } catch (err) {
         resultsWrap.innerHTML = "";
         resultsWrap.appendChild(ViewHelpers.errorBlock(Lang.t("error.network"), () => run(query)));
@@ -2109,7 +2151,7 @@
       Utils.el("label", { class: "toggle-pill", for: "avail-only" }, [availableOnlyToggle, Utils.el("span", { text: Lang.t("drivers.filterAvailableOnly") })])
     ]);
     const resultsWrap = Utils.el("div", {});
-    const bannerZone = Utils.el("div", { class: "banner-zone" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--search" }, [
       buildBanner(emergencyBannerSlides(), { emergency: true }),
       crumb,
       Utils.el("div", { class: "section-head" }, [
@@ -2131,7 +2173,8 @@
     if (!alreadyCached) resultsWrap.appendChild(ViewHelpers.loadingBlock(Lang.t("drivers.loading")));
 
     try {
-      const list = await Api.getEmergencyDrivers();
+      const marketSlug = effectiveMarketSlug();
+      const list = (await Api.getEmergencyDrivers()).filter((d) => inMarket(d, marketSlug));
       resultsWrap.innerHTML = "";
       if (!list.length) {
         resultsWrap.appendChild(ViewHelpers.emptyBlock({ message: Lang.t("empty.noEmergency") }));
@@ -2183,7 +2226,7 @@
       Utils.el("label", { class: "toggle-pill", for: "avail-only" }, [availableOnlyToggle, Utils.el("span", { text: Lang.t("drivers.filterAvailableOnly") })])
     ]);
     const resultsWrap = Utils.el("div", {});
-    const bannerZone = Utils.el("div", { class: "banner-zone" }, [
+    const bannerZone = Utils.el("div", { class: "banner-zone banner-zone--search" }, [
       buildBanner(doctorBannerSlides(), { emergency: true }),
       crumb,
       Utils.el("div", { class: "section-head" }, [
@@ -2225,7 +2268,7 @@
           resultsWrap.appendChild(ViewHelpers.emptyBlock({ message: Lang.t("empty.noDoctorSearchResults") }));
           return;
         }
-        resultsWrap.appendChild(Utils.el("div", { class: "driver-grid" }, shown.map((d) => driverCard(d, null, crumbTrail))));
+        resultsWrap.appendChild(Utils.el("div", { class: "driver-grid" }, shown.map((d) => driverCard(d, null, crumbTrail, "doctor"))));
       }
       paintList("");
       const debouncedFilter = Utils.debounce((q) => paintList(q), 250);

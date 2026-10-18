@@ -2594,3 +2594,26 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
 }
 .field input[type="text"].multi-search::placeholder { font-size: 12px; opacity: 0.8; }
+
+.clock-bar-wrap { padding-top: var(--space-3); }
+.clock-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  height: calc(var(--header-height) / 2);
+  padding: 0 var(--space-3);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.clock-bar__center { display: flex; align-items: baseline; gap: var(--space-2); font-size: clamp(0.8125rem, 3.6vw, var(--font-size-sm)); font-weight: 600; letter-spacing: 0.02em; }
+.clock-bar__date { color: var(--color-ink-soft); }
+.clock-bar__sec { font-size: 0.8em; font-weight: 500; color: var(--color-ink-soft); opacity: 0.65; }
+.clock-bar__side { display: flex; align-items: baseline; gap: 0.3em; font-size: clamp(0.75rem, 3.3vw, var(--font-size-sm)); font-weight: 600; color: var(--color-ink-soft); overflow: hidden; }
+.clock-bar__num { font-size: 0.88em; font-weight: 500; }
+.clock-bar__side--start { justify-content: flex-start; }
+.clock-bar__side--end { justify-content: flex-end; }

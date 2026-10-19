@@ -375,6 +375,10 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   added automatically so the white text stays readable. Pictures load in the
   background and never delay the text; once loaded they are kept in the
   browser's photo cache. There is no local folder for notice pictures.
+- A home notice's `link` can be a normal web address (opens in a new tab) or
+  `#/driver/<Driver ID>` (e.g. `#/driver/D1264`): the profile card then opens
+  over the page you are on, without reloading the app, and the Back button
+  returns to the same place.
 - Notice animation: a coloured light runs once around the header's border every
   ~11 seconds, and runs slowly and continuously around each notice card. It is
   drawn with a rotating layer (GPU-friendly) and is paused for any notice that

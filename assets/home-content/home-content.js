@@ -77,7 +77,7 @@ window.HOME_NOTICES = [
     textBn: "আমাদের এলাকায় একজন ডাক্তার আছেন, যিনি মেশিনের সাহায্যে মুসলমানি (খতনা) করান, এতে কোনো রক্তপাত হয় না। বিস্তারিত ও যোগাযোগের জন্য ডাক্তারের প্রোফাইল দেখুন।",
     date: "",
     urgent: false,
-    link: "https://saiful-987-yu.github.io/amader-elaka/#/driver/DR1213",
+    link: "#/driver/DR1213",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {

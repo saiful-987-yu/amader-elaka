@@ -639,6 +639,22 @@
     return Lang.current() === "bn" ? (b || a) : (a || b);
   }
 
+  let noticeRingObserver = null;
+
+  function noticeRing(host) {
+    if ("IntersectionObserver" in window) {
+      if (!noticeRingObserver) {
+        noticeRingObserver = new IntersectionObserver((entries) => {
+          entries.forEach((e) => e.target.classList.toggle("is-ring-live", e.isIntersecting));
+        }, { rootMargin: "60px" });
+      }
+      noticeRingObserver.observe(host);
+    } else {
+      host.classList.add("is-ring-live");
+    }
+    return Utils.el("span", { class: "notice-ring", "aria-hidden": "true" }, [Utils.el("i", { class: "notice-ring__spin" })]);
+  }
+
   function homeNoticeCard(n) {
     const title = pickText(n.titleEn, n.titleBn);
     const text = pickText(n.textEn, n.textBn);
@@ -654,12 +670,17 @@
       }));
     }
     const card = Utils.el("article", { class: "notice-card" + (n.urgent ? " notice-card--urgent" : "") }, children);
-    const localBg = Utils.localFixtureUrl("homeNoticeBg", "bg");
-    const probe = Utils.el("img", { alt: "" });
-    Utils.wireImageFallback(probe, "", () => {}, localBg, () => {
-      card.style.backgroundImage = `linear-gradient(rgba(10, 30, 20, 0.55), rgba(10, 30, 20, 0.55)), url("${probe.src}")`;
-      card.classList.add("notice-card--has-bg");
-    });
+    card.appendChild(noticeRing(card));
+    const bgLink = Utils.clean(n.bgImage);
+    if (bgLink) {
+      const probe = Utils.el("img", { alt: "", class: "notice-card__probe", "aria-hidden": "true" });
+      card.appendChild(probe);
+      Utils.wireImageFallback(probe, bgLink, () => {}, null, () => {
+        card.style.backgroundImage = `linear-gradient(rgba(10, 30, 20, 0.55), rgba(10, 30, 20, 0.55)), url("${probe.src}")`;
+        card.classList.add("notice-card--has-bg");
+        probe.remove();
+      });
+    }
     return card;
   }
 
@@ -768,6 +789,8 @@
     app.appendChild(categoryZone);
     appendHowItWorks(app);
     appendRegisterCta(app);
+    const moreNoticeZone = Utils.el("div", { class: "home-notice-more-zone" });
+    app.appendChild(moreNoticeZone);
 
     let markets = Api.peekMarkets() || null;
     let vehicles = Api.peekVehicleCategories() || null;
@@ -780,24 +803,30 @@
         n && (Utils.clean(n.titleEn) || Utils.clean(n.titleBn) || Utils.clean(n.textEn) || Utils.clean(n.textBn)));
     }
 
-    function noticeSpeech() {
-      return homeNotices().map((n) =>
+    function noticeSpeech(list) {
+      return list.map((n) =>
         [pickText(n.titleEn, n.titleBn), pickText(n.textEn, n.textBn)].filter(Boolean).join(". ")
       ).filter(Boolean).join(". ");
     }
 
-    function noticeBarHead() {
-      if (!homeNotices().length) return null;
+    function noticeHeadEl(list) {
       const heading = Lang.t("home.noticeHeading");
-      return Utils.el("div", { class: "home-bazar__notice-head" }, [
+      const head = Utils.el("div", { class: "home-bazar__notice-head" }, [
         Utils.el("span", { class: "home-bazar__notice-title", text: heading }),
         Utils.el("button", {
           type: "button", class: "speak-btn",
           "aria-label": Lang.t("a11y.speak", { text: heading }),
-          onClick: (e) => { e.stopPropagation(); Utils.speak(noticeSpeech(), Lang.current()); },
+          onClick: (e) => { e.stopPropagation(); Utils.speak(noticeSpeech(list), Lang.current()); },
           html: Icons.speaker
         })
       ]);
+      head.appendChild(noticeRing(head));
+      return head;
+    }
+
+    function noticeBarHead() {
+      const list = homeNotices().slice(0, 1);
+      return list.length ? noticeHeadEl(list) : null;
     }
 
     function chooseMarket(slug) {
@@ -854,10 +883,17 @@
 
     function paintNotices() {
       noticeZone.innerHTML = "";
+      moreNoticeZone.innerHTML = "";
       const list = homeNotices();
       if (!list.length) return;
       noticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container" }, [
-        Utils.el("div", { class: "notice-list" }, list.map(homeNoticeCard))
+        Utils.el("div", { class: "notice-list" }, [homeNoticeCard(list[0])])
+      ]));
+      const rest = list.slice(1);
+      if (!rest.length) return;
+      moreNoticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container home-notice-more" }, [
+        Utils.el("div", { class: "home-notice-more__bar" }, [noticeHeadEl(rest)]),
+        Utils.el("div", { class: "notice-list" }, rest.map(homeNoticeCard))
       ]));
     }
 

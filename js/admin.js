@@ -328,33 +328,17 @@
   const F = (key, en, bn, type, extra) => Object.assign({ key, en, bn, type: type || "text" }, extra || {});
   const YES_NO_ACTIVE = ["Active", "Inactive"];
 
-  const REGISTRATION_FIELDS = [
-    F("name", "Name", "নাম"),
-    F("nameBn", "Bengali Name", "বাংলা নাম"),
-    F("guardianName", "Father/Husband Name", "পিতা/স্বামীর নাম"),
-    F("phone", "Phone", "ফোন", "tel"),
-    F("altPhone", "Alternative Phone", "বিকল্প ফোন", "tel"),
-    F("whatsapp", "WhatsApp", "হোয়াটসঅ্যাপ"),
-    F("village", "Village", "গ্রাম"),
-    F("postOffice", "Post Office", "ডাকঘর"),
-    F("union", "Union", "ইউনিয়ন"),
-    F("upazila", "Upazila", "উপজেলা"),
-    F("district", "District", "জেলা"),
-    F("fullAddress", "Full Address", "পূর্ণ ঠিকানা", "textarea"),
-    F("vehicleType", "Category", "ক্যাটাগরি", "multi", { source: "vehicles" }),
-    F("vehicleNumber", "Reference Number", "রেফারেন্স / গাড়ির নম্বর"),
-    F("bazar", "Bazar", "বাজার", "multi", { source: "markets" }),
-    F("serviceArea", "Service Area", "সার্ভিস এরিয়া"),
-    F("experience", "Experience", "অভিজ্ঞতা"),
+  const LINK_FIELDS = [
     F("imageUrl", "Profile Image URL", "প্রোফাইল ছবির লিংক", "url"),
     F("vehicleImageUrl", "Gallery Image URL(s)", "অন্যান্য ছবির লিংক", "textarea", { hint: ["Separate several links with commas", "একাধিক লিংক কমা দিয়ে আলাদা করুন"] }),
+    F("socialUrl", "Social Media URL(s)", "সোশ্যাল মিডিয়া লিংক", "textarea", { hint: ["Separate several links with a comma and a space", "একাধিক লিংক কমা ও স্পেস দিয়ে আলাদা করুন"] })
+  ];
+  const VIDEO_FIELD = F("videoUrl", "Video URL", "ভিডিও লিংক", "url");
+
+  const ACCOUNT_FIELDS = [
     F("username", "Username", "ইউজারনেম"),
     F("password", "New Password", "নতুন পাসওয়ার্ড", "password", { hint: ["Leave empty to keep the current password", "ফাঁকা রাখলে বর্তমান পাসওয়ার্ড অপরিবর্তিত থাকবে"] })
   ];
-
-  const SOCIAL_FIELD = F("socialUrl", "Social Media URL(s)", "সোশ্যাল মিডিয়া লিংক", "textarea", { hint: ["Separate several links with a comma and a space", "একাধিক লিংক কমা ও স্পেস দিয়ে আলাদা করুন"] });
-
-  const QUALIFICATION_FIELD = F("qualification", "Qualification", "ডিগ্রি / বিশেষজ্ঞতা");
 
   const MANAGED_FIELDS = [
     F("status", "Account Status", "অ্যাকাউন্ট স্ট্যাটাস", "select", { options: YES_NO_ACTIVE }),
@@ -362,24 +346,20 @@
   ];
   const DRIVER_ONLY_MANAGED = [
     F("emergency", "Emergency Contact", "ইমার্জেন্সি কন্টাক্ট", "select", { options: ["TRUE", "FALSE"], allowBlank: true }),
-    F("doctor", "Doctor Status (old, use Category: Doctor)", "ডক্টর স্ট্যাটাস (পুরনো, ক্যাটাগরি Doctor ব্যবহার করুন)", "select", { options: ["TRUE", "FALSE"], allowBlank: true }),
     F("sortStatus", "Sort Status", "সর্ট স্ট্যাটাস", "select", { options: ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"], allowBlank: true })
   ];
   const RATING_FIELDS = [
     F("starRating", "Star Rating (0–5)", "স্টার রেটিং (০–৫)", "number"),
     F("manualRating", "Manual Rating (0–5)", "ম্যানুয়াল রেটিং (০–৫)", "number"),
-    F("personalDetails", "Personal Details", "ব্যক্তিগত বিবরণ", "textarea", { hint: ["Simple HTML is allowed", "সাধারণ HTML ব্যবহার করা যাবে"] }),
-    F("videoUrl", "Video URL", "ভিডিও লিংক", "url")
+    F("personalDetails", "Personal Details", "ব্যক্তিগত বিবরণ", "textarea", { hint: ["Simple HTML is allowed", "সাধারণ HTML ব্যবহার করা যাবে"] })
   ];
 
   function fieldsFor(kind) {
-    const driverBase = REGISTRATION_FIELDS.slice();
-    driverBase.splice(driverBase.findIndex((f) => f.key === "vehicleImageUrl") + 1, 0, SOCIAL_FIELD, QUALIFICATION_FIELD);
-    if (kind === "pending") return driverBase;
-    return driverBase.concat(MANAGED_FIELDS, DRIVER_ONLY_MANAGED, RATING_FIELDS);
+    if (kind === "pending") return { links: LINK_FIELDS, managed: [], account: ACCOUNT_FIELDS };
+    return { links: LINK_FIELDS.concat([VIDEO_FIELD]), managed: MANAGED_FIELDS.concat(DRIVER_ONLY_MANAGED, RATING_FIELDS), account: ACCOUNT_FIELDS };
   }
 
-  const PAIRS = [["nameBn", "guardianName"], ["altPhone", "whatsapp"], ["postOffice", "union"], ["upazila", "district"], ["serviceArea", "experience"], ["status", "availability"], ["emergency", "doctor"], ["starRating", "manualRating"]];
+  const PAIRS = [["status", "availability"], ["emergency", "sortStatus"], ["starRating", "manualRating"]];
 
   function layoutNodes(controls, kind) {
     const pairs = PAIRS;
@@ -509,6 +489,141 @@
     return api;
   }
 
+  function fieldErrorSetter(wrap) {
+    const errorMsg = wrap.querySelector(".error-msg");
+    return (msg) => { wrap.classList.toggle("has-error", !!msg); if (errorMsg) errorMsg.textContent = msg || ""; };
+  }
+
+  function inputAdapter(key, field, original) {
+    const orig = Utils.clean(original);
+    field.control.value = orig;
+    return {
+      key, wrap: field.wrap,
+      read: () => field.control.value,
+      changed: () => Utils.clean(field.control.value) !== orig,
+      setError: fieldErrorSetter(field.wrap)
+    };
+  }
+
+  function multiAdapter(key, field, original, options) {
+    const partSlugs = Utils.splitMulti(original).map(slugify);
+    const slugByValue = {};
+    options.forEach((o) => { slugByValue[o.value] = o.slug; });
+    const boxes = Array.from(field.wrap.querySelectorAll("input[type=checkbox]"));
+    boxes.forEach((cb) => { cb.checked = partSlugs.indexOf(slugByValue[cb.value]) !== -1; });
+    return {
+      key, wrap: field.wrap,
+      read: () => boxes.filter((cb) => cb.checked).map((cb) => cb.value).join(", "),
+      changed: () => boxes.filter((cb) => cb.checked).map((cb) => slugByValue[cb.value]).sort().join("|") !== partSlugs.slice().sort().join("|"),
+      setError: fieldErrorSetter(field.wrap)
+    };
+  }
+
+  function experienceAdapter(field, original) {
+    const orig = Utils.clean(original);
+    const numberInput = field.wrap.querySelector("#experienceValue");
+    const unitSelect = field.wrap.querySelector("#experienceUnit");
+    let parsed = !orig;
+    const fromMatch = orig.match(/^from\s+(\d{4})$/i);
+    const spanMatch = orig.match(/^(\d+(?:\.\d+)?)\s*(years?|months?)$/i);
+    if (fromMatch) { numberInput.value = fromMatch[1]; unitSelect.value = "from"; parsed = true; }
+    else if (spanMatch) { numberInput.value = spanMatch[1]; unitSelect.value = /^month/i.test(spanMatch[2]) ? "months" : "years"; parsed = true; }
+    unitSelect.dispatchEvent(new Event("change"));
+    if (!parsed) field.wrap.appendChild(Utils.el("div", { class: "hint", text: T("Current value: ", "বর্তমান মান: ") + orig }));
+    let touched = false;
+    const mark = () => { touched = true; };
+    numberInput.addEventListener("input", mark);
+    unitSelect.addEventListener("change", mark);
+    const compose = () => {
+      const n = Utils.clean(numberInput.value);
+      if (!n) return "";
+      return unitSelect.value === "from" ? "From " + n : n + " " + (unitSelect.value === "months" ? "Months" : "Years");
+    };
+    const setError = fieldErrorSetter(field.wrap);
+    return {
+      key: "experience", wrap: field.wrap,
+      read: () => (touched || !orig ? compose() : orig),
+      changed: () => touched && compose().toLowerCase() !== orig.toLowerCase(),
+      setError,
+      validate: () => {
+        const n = Utils.clean(numberInput.value);
+        const year = Number(n);
+        if (unitSelect.value === "from" && n && !(Number.isInteger(year) && year >= 1900 && year <= new Date().getFullYear())) {
+          setError(Lang.t("validation.yearInvalid"));
+          return false;
+        }
+        return true;
+      }
+    };
+  }
+
+  function extraAdapter(key, field, original) {
+    const orig = Utils.clean(original);
+    field.control.value = orig;
+    const hidden = () => field.wrap.style.display === "none";
+    return {
+      key, wrap: field.wrap,
+      read: () => (hidden() ? "" : field.control.value),
+      changed: () => !hidden() && Utils.clean(field.control.value) !== orig,
+      setError: fieldErrorSetter(field.wrap)
+    };
+  }
+
+  function buildFormControls(kind, values, lists, formEl, liveCheck) {
+    const RF = window.RegistrationForm;
+    const controls = [];
+    const nodes = [];
+    const digits = (v) => Utils.clean(v).replace(/\D/g, "");
+    const ownPhone = digits(values.phone);
+
+    const personal = RF.createPersonalRows(formEl, null, ownPhone ? (v) => digits(v) === ownPhone : null);
+    [["name", "fullName"], ["nameBn", "fullNameBn"], ["guardianName", "guardianName"], ["phone", "mobile"], ["altPhone", "altMobile"], ["whatsapp", "whatsapp"],
+      ["village", "village"], ["postOffice", "postOffice"], ["union", "union"], ["upazila", "upazila"], ["district", "district"], ["fullAddress", "fullAddress"]
+    ].forEach(([key, id]) => controls.push(inputAdapter(key, personal.fields[id], values[key])));
+    personal.rows.forEach((row) => nodes.push(row.wrap || row));
+
+    const optionList = (source, current) => {
+      const opts = (source || []).map((o) => ({
+        value: o.nameEn, slug: o.slug || slugify(o.nameEn),
+        label: Lang.current() === "bn" ? (o.nameBn || o.nameEn) : o.nameEn,
+        search: [o.nameEn, o.nameBn, o.slug].join(" ")
+      }));
+      Utils.splitMulti(current).forEach((p) => {
+        if (!opts.some((o) => o.slug === slugify(p))) opts.push({ value: p, slug: slugify(p), label: p, search: p });
+      });
+      return opts;
+    };
+    const vehicleOptions = optionList(lists.vehicles, values.vehicleType);
+    const marketOptions = optionList(lists.markets, values.bazar);
+    const slugByVehicle = {};
+    vehicleOptions.forEach((o) => { slugByVehicle[o.value] = o.slug; });
+
+    const category = RF.createCategoryRows({
+      vehicleOptions, marketOptions, clearHidden: false,
+      slugOf: (value) => slugByVehicle[value] || slugify(value)
+    });
+    const cf = category.fields;
+    controls.push(multiAdapter("vehicleType", cf.vehicleType, values.vehicleType, vehicleOptions));
+    controls.push(inputAdapter("vehicleNumber", cf.vehicleNumber, values.vehicleNumber));
+    controls.push(multiAdapter("bazar", cf.marketSlug, values.bazar, marketOptions));
+    controls.push(inputAdapter("serviceArea", cf.serviceArea, values.serviceArea));
+    controls.push(experienceAdapter(cf.experience, values.experience));
+    controls.push(extraAdapter("qualification", cf.qualification, values.qualification));
+    cf.extra.forEach((row, i) => controls.push(extraAdapter("extra" + (i + 1), row, values["extra" + (i + 1)])));
+    category.rows.forEach((row) => nodes.push(row.wrap || row));
+    category.updateExtraFields();
+
+    const defs = fieldsFor(kind);
+    const build = (list) => list.map((def) => buildControl(def, values[def.key] || "", lists, liveCheck));
+    [defs.links, defs.managed, defs.account].forEach((list) => {
+      const built = build(list);
+      built.forEach((c) => controls.push(c));
+      layoutNodes(built, kind).forEach((n) => nodes.push(n));
+    });
+
+    return { controls, nodes };
+  }
+
   Admin.openEditor = async function (kind, id, opts) {
     opts = opts || {};
     const backToPending = kind === "pending";
@@ -535,10 +650,11 @@
       return;
     }
 
-    const defs = fieldsFor(kind);
-    const controls = defs.map((def) => buildControl(def, (record.fields || {})[def.key] || "", lists, true));
     const saveBtn = Utils.el("button", { type: "submit", class: "btn btn--primary btn--block mt-5", text: Lang.t("profile.save") });
-    const form = Utils.el("form", { class: "admin-edit-form", novalidate: "novalidate" }, layoutNodes(controls, kind).concat([saveBtn]));
+    const form = Utils.el("form", { class: "admin-edit-form", novalidate: "novalidate" });
+    const built = buildFormControls(kind, record.fields || {}, lists, form, true);
+    const controls = built.controls;
+    built.nodes.concat([saveBtn]).forEach((node) => form.appendChild(node));
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -552,6 +668,7 @@
           if (isNaN(n) || n < 0 || n > 5) { c.setError(T("Enter a number from 0 to 5.", "০ থেকে ৫ এর মধ্যে একটি সংখ্যা দিন।")); ok = false; }
         }
         if (c.key === "password" && c.read() && c.read().length < 6) { c.setError(Lang.t("validation.passwordShort")); ok = false; }
+        if (c.validate && !c.validate()) ok = false;
       });
       if (!ok) { const bad = form.querySelector(".has-error"); if (bad) bad.scrollIntoView({ block: "center" }); return; }
 
@@ -600,10 +717,11 @@
       return;
     }
 
-    const defs = fieldsFor("driver");
-    const controls = defs.map((def) => buildControl(def, "", lists, false));
     const saveBtn = Utils.el("button", { type: "submit", class: "btn btn--primary btn--block mt-5", text: Lang.t("profile.save") });
-    const form = Utils.el("form", { class: "admin-edit-form", novalidate: "novalidate" }, layoutNodes(controls, "driver").concat([saveBtn]));
+    const form = Utils.el("form", { class: "admin-edit-form", novalidate: "novalidate" });
+    const built = buildFormControls("driver", {}, lists, form, false);
+    const controls = built.controls;
+    built.nodes.concat([saveBtn]).forEach((node) => form.appendChild(node));
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -616,6 +734,7 @@
           if (isNaN(n) || n < 0 || n > 5) { c.setError(T("Enter a number from 0 to 5.", "০ থেকে ৫ এর মধ্যে একটি সংখ্যা দিন।")); ok = false; }
         }
         if (c.key === "password" && c.read() && c.read().length < 6) { c.setError(Lang.t("validation.passwordShort")); ok = false; }
+        if (c.validate && !c.validate()) ok = false;
       });
       if (!ok) { const bad = form.querySelector(".has-error"); if (bad) bad.scrollIntoView({ block: "center" }); return; }
 

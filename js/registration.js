@@ -124,7 +124,7 @@
     return { wrap, control };
   }
 
-  function availabilityField(app, { id, labelKey, type, wrapClass, checkFn, takenMessageKey, isValidFn, onStatus, tintClass }) {
+  function availabilityField(app, { id, labelKey, type, wrapClass, checkFn, takenMessageKey, isValidFn, onStatus, tintClass, skipFn }) {
     const { wrap, control } = fieldRow({ id, labelKey, type });
     if (tintClass) wrap.classList.add(tintClass);
     const inputWrap = Utils.el("div", { class: wrapClass });
@@ -142,6 +142,7 @@
       setFieldError(app, id, "");
       if (onStatus) onStatus(value, null);
       if (!value) return;
+      if (skipFn && skipFn(value)) return;
       if (isValidFn && !isValidFn(value)) return;
       statusIcon.innerHTML = Icons.more;
       statusIcon.classList.add("is-checking");
@@ -179,10 +180,10 @@
     return field;
   }
 
-  function mobileField(app, onStatus) {
+  function mobileField(app, onStatus, skipFn) {
     const field = availabilityField(app, {
       id: "mobile", labelKey: "field.mobile", type: "tel", wrapClass: "phone-field",
-      checkFn: Api.checkPhone, takenMessageKey: "field.phoneTaken", isValidFn: Utils.isValidBdPhone, onStatus, tintClass: "field--tint-b"
+      checkFn: Api.checkPhone, takenMessageKey: "field.phoneTaken", isValidFn: Utils.isValidBdPhone, onStatus, tintClass: "field--tint-b", skipFn
     });
     field.control.placeholder = Lang.current() === "bn" ? "নাম্বার লিখুন যেমন (01610-253221)" : "Enter number like (01610-253221)";
     return field;
@@ -403,6 +404,170 @@
     if (focusable) focusable.focus({ preventScroll: true });
   }
 
+  function createPersonalRows(app, onPhoneStatus, skipPhoneFn) {
+    const villageField = fieldRow({ id: "village", labelKey: "field.village" });
+    const postOfficeField = fieldRow({ id: "postOffice", labelKey: "field.postOffice" });
+    const unionField = fieldRow({ id: "union", labelKey: "field.union" });
+    const upazilaField = fieldRow({ id: "upazila", labelKey: "field.upazila" });
+    const districtField = fieldRow({ id: "district", labelKey: "field.district" });
+    const fullAddressField = fieldRow({ id: "fullAddress", labelKey: "field.fullAddress", type: "textarea" });
+    fullAddressField.control.readOnly = true;
+    fullAddressField.control.classList.add("is-readonly");
+
+    const addressParts = [villageField, postOfficeField, unionField, upazilaField, districtField];
+    function addressIsEnglish() {
+      const words = addressParts
+        .map((f) => Utils.clean(f.control.value))
+        .filter(Boolean)
+        .join(" ")
+        .split(/\s+/)
+        .filter(Boolean);
+      if (!words.length) return Lang.current() !== "bn";
+      const englishWords = words.filter((w) => /^[A-Za-z0-9.,'\-]+$/.test(w)).length;
+      return englishWords / words.length > 0.6;
+    }
+    const syncFullAddress = () => {
+      const isEn = addressIsEnglish();
+      const village = Utils.clean(villageField.control.value);
+      const postOffice = Utils.clean(postOfficeField.control.value);
+      const rest = [unionField, upazilaField, districtField]
+        .map((f) => Utils.clean(f.control.value))
+        .filter(Boolean);
+      const parts = [];
+      if (village) parts.push((isEn ? "Village: " : "গ্রামঃ ") + village);
+      if (postOffice) parts.push((isEn ? "Post Office: " : "ডাকঘর: ") + postOffice);
+      parts.push(...rest);
+      fullAddressField.control.value = parts.length ? parts.join(", ") + (isEn ? "." : "।") : "";
+    };
+    addressParts.forEach((f) => f.control.addEventListener("input", syncFullAddress));
+
+    const isBn = Lang.current() === "bn";
+
+    const fullNameField = fieldRow({ id: "fullName", labelKey: "field.fullName" });
+    fullNameField.wrap.classList.add("field--tint-a");
+    fullNameField.control.placeholder = isBn ? "আপনার নাম লিখুন যেমন (Saiful Islam)" : "Enter your name like (Saiful Islam)";
+
+    const fullNameBnField = fieldRow({ id: "fullNameBn", labelKey: "field.fullNameBn" });
+    fullNameBnField.wrap.classList.add("field--tint-a");
+    fullNameBnField.control.placeholder = isBn ? "নাম লিখুন" : "Enter name";
+
+    const guardianField = fieldRow({ id: "guardianName", labelKey: "field.guardianName" });
+    guardianField.wrap.classList.add("field--tint-a", "field--label-noshrink-guard");
+    guardianField.control.placeholder = isBn ? "নাম লিখুন" : "Enter name";
+
+    const altMobileField = fieldRow({ id: "altMobile", labelKey: "field.altMobile", type: "tel" });
+    altMobileField.wrap.classList.add("field--tint-b");
+    altMobileField.control.placeholder = isBn ? "নাম্বার লিখুন" : "Enter number";
+
+    const whatsappField = fieldRow({ id: "whatsapp", labelKey: "field.whatsapp", type: "tel" });
+    whatsappField.wrap.classList.add("field--tint-b");
+    whatsappField.control.placeholder = isBn ? "নাম্বার লিখুন" : "Enter number";
+
+    [villageField, postOfficeField, unionField, upazilaField, districtField].forEach((f) => f.wrap.classList.add("field--tint-c"));
+    villageField.control.placeholder = isBn ? "যেমন: গ্রামঃ পশ্চিম উরির চর, ৮ নং ওয়ার্ড" : "Village: West Urir Char, Ward No. 8";
+    postOfficeField.control.placeholder = isBn ? "যেমনঃ জনতা বাজার - ৩৮১৩" : "e.g. Jonota Bazar - 3813";
+    unionField.control.placeholder = isBn ? "যেমনঃ চরক্লার্ক" : "e.g. Char Clerk";
+    upazilaField.control.placeholder = isBn ? "যেমনঃ সুবর্ণচর" : "e.g. Subarnachar";
+    districtField.control.placeholder = isBn ? "যেমনঃ নোয়াখালী" : "e.g. Noakhali";
+
+    const mobile = mobileField(app, onPhoneStatus, skipPhoneFn);
+
+    return {
+      syncFullAddress,
+      fields: {
+        fullName: fullNameField, fullNameBn: fullNameBnField, guardianName: guardianField, mobile,
+        altMobile: altMobileField, whatsapp: whatsappField, village: villageField, postOffice: postOfficeField,
+        union: unionField, upazila: upazilaField, district: districtField, fullAddress: fullAddressField
+      },
+      rows: [
+        fullNameField,
+        twoColFieldRow(fullNameBnField, guardianField),
+        mobile,
+        twoColFieldRow(altMobileField, whatsappField),
+        villageField,
+        twoColFieldRow(postOfficeField, unionField),
+        twoColFieldRow(upazilaField, districtField),
+        fullAddressField
+      ]
+    };
+  }
+
+  function createCategoryRows(opts) {
+    const vehicleNumberField = fieldRow({ id: "vehicleNumber", labelKey: "field.vehicleNumber" });
+    vehicleNumberField.wrap.classList.add("field--tint-b");
+    vehicleNumberField.control.placeholder = Lang.current() === "bn"
+      ? "যেমন: ঢাকা মেট্রো-থ ৪৯-১২৩৪, No License, No Need"
+      : "e.g. Dhaka Metro-GA 11-1234, No License, No Need";
+
+    const serviceAreaField = fieldRow({ id: "serviceArea", labelKey: "field.serviceArea" });
+    serviceAreaField.wrap.classList.add("field--tint-b");
+    serviceAreaField.control.placeholder = "Nobi Bazar + 50 km Coverage Radius";
+
+    const experienceRow = experienceField();
+    experienceRow.wrap.classList.add("field--tint-d");
+
+    const slugOf = opts.slugOf || ((value) => value);
+    const clearHidden = opts.clearHidden !== false;
+
+    const vehicleTypeField = multiSelectField({
+      id: "vehicleType", labelKey: "field.vehicleType", searchable: true,
+      options: opts.vehicleOptions
+    });
+    const qualificationRow = fieldRow({ id: "qualification", labelKey: "field.qualification" });
+    qualificationRow.wrap.style.display = "none";
+    const extraRows = [1, 2, 3, 4].map((n) => {
+      const row = fieldRow({ id: "extra" + n, labelKey: "field.extra" });
+      row.wrap.style.display = "none";
+      return row;
+    });
+    const extraGrid = Utils.el("div", { class: "field-row-2col extra-grid" },
+      [qualificationRow].concat(extraRows).map((row) => row.wrap));
+    function updateExtraFields() {
+      const chosen = Array.from(vehicleTypeField.wrap.querySelectorAll("input[type=checkbox]:checked")).map((cb) => slugOf(cb.value));
+      const defs = Utils.extraFieldDefs(chosen);
+      const qualificationDef = Utils.qualificationDef(chosen);
+      const shown = [];
+      qualificationRow.wrap.style.display = qualificationDef ? "" : "none";
+      if (qualificationDef) {
+        qualificationRow.wrap.querySelector("label").textContent = Utils.extraLabel(qualificationDef);
+        shown.push(qualificationRow.wrap);
+      } else if (clearHidden) qualificationRow.control.value = "";
+      extraRows.forEach((row, i) => {
+        const def = defs[i];
+        row.wrap.style.display = def ? "" : "none";
+        if (def) {
+          row.wrap.querySelector("label").textContent = Utils.extraLabel(def);
+          shown.push(row.wrap);
+        } else if (clearHidden) row.control.value = "";
+      });
+      [qualificationRow.wrap].concat(extraRows.map((r) => r.wrap)).forEach((w) => { w.style.gridColumn = ""; });
+      if (shown.length % 2 === 1) shown[shown.length - 1].style.gridColumn = "1 / -1";
+    }
+    vehicleTypeField.wrap.addEventListener("change", updateExtraFields);
+    setTimeout(updateExtraFields, 0);
+
+    const marketField = multiSelectField({
+      id: "marketSlug", labelKey: "field.chooseMarket", searchable: true,
+      options: opts.marketOptions
+    });
+
+    return {
+      updateExtraFields,
+      fields: {
+        vehicleType: vehicleTypeField, vehicleNumber: vehicleNumberField, marketSlug: marketField,
+        serviceArea: serviceAreaField, experience: experienceRow, qualification: qualificationRow, extra: extraRows
+      },
+      rows: [
+        vehicleTypeField,
+        vehicleNumberField,
+        marketField,
+        serviceAreaField,
+        extraGrid,
+        experienceRow
+      ]
+    };
+  }
+
   async function renderRegister(app) {
     if (flushActiveSessionFields) {
       flushActiveSessionFields();
@@ -459,145 +624,16 @@
     }
 
     function buildStep1() {
-      const villageField = fieldRow({ id: "village", labelKey: "field.village" });
-      const postOfficeField = fieldRow({ id: "postOffice", labelKey: "field.postOffice" });
-      const unionField = fieldRow({ id: "union", labelKey: "field.union" });
-      const upazilaField = fieldRow({ id: "upazila", labelKey: "field.upazila" });
-      const districtField = fieldRow({ id: "district", labelKey: "field.district" });
-      const fullAddressField = fieldRow({ id: "fullAddress", labelKey: "field.fullAddress", type: "textarea" });
-      fullAddressField.control.readOnly = true;
-      fullAddressField.control.classList.add("is-readonly");
-
-      const addressParts = [villageField, postOfficeField, unionField, upazilaField, districtField];
-      function addressIsEnglish() {
-        const words = addressParts
-          .map((f) => Utils.clean(f.control.value))
-          .filter(Boolean)
-          .join(" ")
-          .split(/\s+/)
-          .filter(Boolean);
-        if (!words.length) return Lang.current() !== "bn";
-        const englishWords = words.filter((w) => /^[A-Za-z0-9.,'\-]+$/.test(w)).length;
-        return englishWords / words.length > 0.6;
-      }
-      syncFullAddress = () => {
-        const isEn = addressIsEnglish();
-        const village = Utils.clean(villageField.control.value);
-        const postOffice = Utils.clean(postOfficeField.control.value);
-        const rest = [unionField, upazilaField, districtField]
-          .map((f) => Utils.clean(f.control.value))
-          .filter(Boolean);
-        const parts = [];
-        if (village) parts.push((isEn ? "Village: " : "গ্রামঃ ") + village);
-        if (postOffice) parts.push((isEn ? "Post Office: " : "ডাকঘর: ") + postOffice);
-        parts.push(...rest);
-        fullAddressField.control.value = parts.length ? parts.join(", ") + (isEn ? "." : "।") : "";
-      };
-      addressParts.forEach((f) => f.control.addEventListener("input", syncFullAddress));
-
-      const isBn = Lang.current() === "bn";
-
-      const fullNameField = fieldRow({ id: "fullName", labelKey: "field.fullName" });
-      fullNameField.wrap.classList.add("field--tint-a");
-      fullNameField.control.placeholder = isBn ? "আপনার নাম লিখুন যেমন (Saiful Islam)" : "Enter your name like (Saiful Islam)";
-
-      const fullNameBnField = fieldRow({ id: "fullNameBn", labelKey: "field.fullNameBn" });
-      fullNameBnField.wrap.classList.add("field--tint-a");
-      fullNameBnField.control.placeholder = isBn ? "নাম লিখুন" : "Enter name";
-
-      const guardianField = fieldRow({ id: "guardianName", labelKey: "field.guardianName" });
-      guardianField.wrap.classList.add("field--tint-a", "field--label-noshrink-guard");
-      guardianField.control.placeholder = isBn ? "নাম লিখুন" : "Enter name";
-
-      const altMobileField = fieldRow({ id: "altMobile", labelKey: "field.altMobile", type: "tel" });
-      altMobileField.wrap.classList.add("field--tint-b");
-      altMobileField.control.placeholder = isBn ? "নাম্বার লিখুন" : "Enter number";
-
-      const whatsappField = fieldRow({ id: "whatsapp", labelKey: "field.whatsapp", type: "tel" });
-      whatsappField.wrap.classList.add("field--tint-b");
-      whatsappField.control.placeholder = isBn ? "নাম্বার লিখুন" : "Enter number";
-
-      [villageField, postOfficeField, unionField, upazilaField, districtField].forEach((f) => f.wrap.classList.add("field--tint-c"));
-      villageField.control.placeholder = isBn ? "গ্রামঃ পশ্চিম উরির চর, ৮ নং ওয়ার্ড" : "Village: West Urir Char, Ward No. 8";
-      postOfficeField.control.placeholder = isBn ? "যেমনঃ জনতা বাজার - ৩৮১৩" : "e.g. Jonota Bazar - 3813";
-      unionField.control.placeholder = isBn ? "যেমনঃ চরক্লার্ক" : "e.g. Char Clerk";
-      upazilaField.control.placeholder = isBn ? "যেমনঃ সুবর্ণচর" : "e.g. Subarnachar";
-      districtField.control.placeholder = isBn ? "যেমনঃ নোয়াখালী" : "e.g. Noakhali";
-
-      return [
-        fullNameField,
-        twoColFieldRow(fullNameBnField, guardianField),
-        mobileField(app, (value, available) => { phoneCheck = { value, available }; }),
-        twoColFieldRow(altMobileField, whatsappField),
-        villageField,
-        twoColFieldRow(postOfficeField, unionField),
-        twoColFieldRow(upazilaField, districtField),
-        fullAddressField
-      ];
+      const built = createPersonalRows(app, (value, available) => { phoneCheck = { value, available }; });
+      syncFullAddress = built.syncFullAddress;
+      return built.rows;
     }
 
     function buildStep2() {
-      const vehicleNumberField = fieldRow({ id: "vehicleNumber", labelKey: "field.vehicleNumber" });
-      vehicleNumberField.wrap.classList.add("field--tint-b");
-      vehicleNumberField.control.placeholder = Lang.current() === "bn"
-        ? "যেমন: ঢাকা মেট্রো-থ ৪৯-১২৩৪, No License, No Need"
-        : "e.g. Dhaka Metro-GA 11-1234, No License, No Need";
-
-      const serviceAreaField = fieldRow({ id: "serviceArea", labelKey: "field.serviceArea" });
-      serviceAreaField.wrap.classList.add("field--tint-b");
-      serviceAreaField.control.placeholder = "Nobi Bazar + 50 km Coverage Radius";
-
-      const experienceRow = experienceField();
-      experienceRow.wrap.classList.add("field--tint-d");
-
-      const vehicleTypeField = multiSelectField({
-        id: "vehicleType", labelKey: "field.vehicleType", searchable: true,
-        options: vehicles.map((v) => ({ value: v.slug, label: Lang.current() === "bn" ? v.nameBn : v.nameEn, search: [v.nameEn, v.nameBn, v.slug].join(" ") }))
-      });
-      const qualificationRow = fieldRow({ id: "qualification", labelKey: "field.qualification" });
-      qualificationRow.wrap.style.display = "none";
-      const extraRows = [1, 2, 3, 4].map((n) => {
-        const row = fieldRow({ id: "extra" + n, labelKey: "field.extra" });
-        row.wrap.style.display = "none";
-        return row;
-      });
-      const extraGrid = Utils.el("div", { class: "field-row-2col extra-grid" },
-        [qualificationRow].concat(extraRows).map((row) => row.wrap));
-      function updateExtraFields() {
-        const chosen = Array.from(vehicleTypeField.wrap.querySelectorAll("input[type=checkbox]:checked")).map((cb) => cb.value);
-        const defs = Utils.extraFieldDefs(chosen);
-        const qualificationDef = Utils.qualificationDef(chosen);
-        const shown = [];
-        qualificationRow.wrap.style.display = qualificationDef ? "" : "none";
-        if (qualificationDef) {
-          qualificationRow.wrap.querySelector("label").textContent = Utils.extraLabel(qualificationDef);
-          shown.push(qualificationRow.wrap);
-        } else qualificationRow.control.value = "";
-        extraRows.forEach((row, i) => {
-          const def = defs[i];
-          row.wrap.style.display = def ? "" : "none";
-          if (def) {
-            row.wrap.querySelector("label").textContent = Utils.extraLabel(def);
-            shown.push(row.wrap);
-          } else row.control.value = "";
-        });
-        [qualificationRow.wrap].concat(extraRows.map((r) => r.wrap)).forEach((w) => { w.style.gridColumn = ""; });
-        if (shown.length % 2 === 1) shown[shown.length - 1].style.gridColumn = "1 / -1";
-      }
-      vehicleTypeField.wrap.addEventListener("change", updateExtraFields);
-      setTimeout(updateExtraFields, 0);
-
-      return [
-        vehicleTypeField,
-        vehicleNumberField,
-        multiSelectField({
-          id: "marketSlug", labelKey: "field.preferredMarket", searchable: true,
-          options: markets.map((m) => ({ value: m.slug, label: Lang.current() === "bn" ? m.nameBn : m.nameEn, search: [m.nameEn, m.nameBn, m.slug].join(" ") }))
-        }),
-        serviceAreaField,
-        extraGrid,
-        experienceRow
-      ];
+      return createCategoryRows({
+        vehicleOptions: vehicles.map((v) => ({ value: v.slug, label: Lang.current() === "bn" ? v.nameBn : v.nameEn, search: [v.nameEn, v.nameBn, v.slug].join(" ") })),
+        marketOptions: markets.map((m) => ({ value: m.slug, label: Lang.current() === "bn" ? m.nameBn : m.nameEn, search: [m.nameEn, m.nameBn, m.slug].join(" ") }))
+      }).rows;
     }
 
     function buildStep3() {
@@ -910,6 +946,8 @@
       ])
     ]));
   }
+
+  window.RegistrationForm = { createPersonalRows, createCategoryRows };
 
   Router.register("/registration", renderRegister, ["/"]);
 })(window, document, window.Utils, window.Lang, window.Icons, window.Api, window.Router, window.ViewHelpers, window.Toast);

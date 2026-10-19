@@ -575,6 +575,17 @@
     }
   }
 
+  async function openDriverById(id) {
+    let directory = Api.peekDriverDirectory();
+    if (!directory) {
+      try { directory = await Api.getDriverDirectory(); } catch (err) { directory = null; }
+    }
+    const wanted = String(id).trim().toLowerCase();
+    const target = (directory || []).find((d) => String(d.driverId || "").trim().toLowerCase() === wanted);
+    if (!target) { Toast.show(Lang.t("error.generic"), "error"); return; }
+    openDriverDetail(target, [{ label: Lang.t("nav.home"), path: "/" }]);
+  }
+
   async function openLinkedDetail(id, from) {
     let directory = Api.peekDriverDirectory();
     if (!directory) {
@@ -663,7 +674,20 @@
     if (title) children.push(Utils.el("h3", { class: "notice-card__title", text: title }));
     if (text) children.push(Utils.el("p", { class: "notice-card__text", text: text }));
     const link = Utils.clean(n.link);
-    if (/^https?:\/\//i.test(link)) {
+    const inAppHash = Utils.siteHashLink(link);
+    const driverLink = inAppHash.match(/^#\/driver\/([^\/?#]+)$/);
+    if (driverLink) {
+      children.push(Utils.el("a", {
+        class: "btn btn--ghost btn--sm notice-card__link", href: inAppHash,
+        text: Lang.t("home.noticeMore"),
+        onClick: (e) => {
+          e.preventDefault();
+          let id = driverLink[1];
+          try { id = decodeURIComponent(id); } catch (err) { }
+          openDriverById(id);
+        }
+      }));
+    } else if (/^https?:\/\//i.test(link)) {
       children.push(Utils.el("a", {
         class: "btn btn--ghost btn--sm notice-card__link", href: link, target: "_blank", rel: "noopener",
         text: Lang.t("home.noticeMore")

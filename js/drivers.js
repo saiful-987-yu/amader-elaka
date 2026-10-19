@@ -666,7 +666,8 @@
     return Utils.el("span", { class: "notice-ring", "aria-hidden": "true" }, [Utils.el("i", { class: "notice-ring__spin" })]);
   }
 
-  function homeNoticeCard(n) {
+  function homeNoticeCard(n, opts) {
+    const withSpeaker = !!(opts && opts.speaker);
     const title = pickText(n.titleEn, n.titleBn);
     const text = pickText(n.textEn, n.textBn);
     const children = [];
@@ -676,8 +677,9 @@
     const link = Utils.clean(n.link);
     const inAppHash = Utils.siteHashLink(link);
     const driverLink = inAppHash.match(/^#\/driver\/([^\/?#]+)$/);
+    let linkEl = null;
     if (driverLink) {
-      children.push(Utils.el("a", {
+      linkEl = Utils.el("a", {
         class: "btn btn--ghost btn--sm notice-card__link", href: inAppHash,
         text: Lang.t("home.noticeMore"),
         onClick: (e) => {
@@ -686,12 +688,27 @@
           try { id = decodeURIComponent(id); } catch (err) { }
           openDriverById(id);
         }
-      }));
+      });
     } else if (/^https?:\/\//i.test(link)) {
-      children.push(Utils.el("a", {
+      linkEl = Utils.el("a", {
         class: "btn btn--ghost btn--sm notice-card__link", href: link, target: "_blank", rel: "noopener",
         text: Lang.t("home.noticeMore")
-      }));
+      });
+    }
+    if (withSpeaker) {
+      const speakBtn = Utils.el("button", {
+        type: "button", class: "speak-btn notice-card__speak",
+        "aria-label": Lang.t("a11y.speak", { text: title || text }),
+        onClick: (e) => {
+          e.stopPropagation();
+          const spoken = [pickText(n.titleEn, n.titleBn), pickText(n.textEn, n.textBn)].filter(Boolean).join(". ");
+          if (spoken) Utils.speak(spoken, Lang.current());
+        },
+        html: Icons.speaker
+      });
+      children.push(Utils.el("div", { class: "notice-card__foot" }, [linkEl, speakBtn].filter(Boolean)));
+    } else if (linkEl) {
+      children.push(linkEl);
     }
     const card = Utils.el("article", { class: "notice-card" + (n.urgent ? " notice-card--urgent" : "") }, children);
     card.appendChild(noticeRing(card));
@@ -833,17 +850,17 @@
       ).filter(Boolean).join(". ");
     }
 
-    function noticeHeadEl(list) {
+    function noticeHeadEl(list, noSpeaker) {
       const heading = Lang.t("home.noticeHeading");
       const head = Utils.el("div", { class: "home-bazar__notice-head" }, [
         Utils.el("span", { class: "home-bazar__notice-title", text: heading }),
-        Utils.el("button", {
+        noSpeaker ? null : Utils.el("button", {
           type: "button", class: "speak-btn",
           "aria-label": Lang.t("a11y.speak", { text: heading }),
           onClick: (e) => { e.stopPropagation(); Utils.speak(noticeSpeech(list), Lang.current()); },
           html: Icons.speaker
         })
-      ]);
+      ].filter(Boolean));
       head.appendChild(noticeRing(head));
       return head;
     }
@@ -916,8 +933,8 @@
       const rest = list.slice(1);
       if (!rest.length) return;
       moreNoticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container home-notice-more" }, [
-        Utils.el("div", { class: "home-notice-more__bar" }, [noticeHeadEl(rest)]),
-        Utils.el("div", { class: "notice-list" }, rest.map(homeNoticeCard))
+        Utils.el("div", { class: "home-notice-more__bar" }, [noticeHeadEl(rest, true)]),
+        Utils.el("div", { class: "notice-list" }, rest.map((n) => homeNoticeCard(n, { speaker: true })))
       ]));
     }
 
@@ -1435,6 +1452,7 @@
     }
 
     function step(delta) {
+      if (frame === 0 || frame === frameCount - 1) { frame = real + 1; paint(false); }
       const prev = real;
       real = (real + delta + realCount) % realCount;
       frame += delta;
@@ -1463,9 +1481,36 @@
     return root;
   }
 
+  const bannerImageRetry = new Set();
+  let bannerImageRetryBound = false;
+
+  function runBannerImageRetry() {
+    bannerImageRetry.forEach((fn) => { if (!fn()) bannerImageRetry.delete(fn); });
+  }
+
+  function bindBannerImageRetry() {
+    if (bannerImageRetryBound) return;
+    bannerImageRetryBound = true;
+    window.addEventListener("online", runBannerImageRetry);
+    window.addEventListener("pageshow", runBannerImageRetry);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") runBannerImageRetry();
+    });
+  }
+
   function attachImageChain(host, srcs, placeholder) {
     const list = (srcs || []).filter(Boolean);
-    const fail = () => {
+    let failed = false;
+    let timedTries = 0;
+
+    function recheck() {
+      if (!host.isConnected) return false;
+      if (failed) { failed = false; build(); }
+      return true;
+    }
+
+    function fail() {
+      failed = true;
       host.innerHTML = "";
       if (placeholder) {
         host.classList.add("banner__slide--placeholder");
@@ -1473,17 +1518,30 @@
       } else {
         host.classList.add("banner__slide--blank");
       }
-    };
+      if (timedTries < 3) {
+        timedTries += 1;
+        setTimeout(recheck, 5000 * timedTries);
+      }
+    }
+
+    function build() {
+      host.innerHTML = "";
+      host.classList.remove("banner__slide--placeholder", "banner__slide--blank");
+      let index = 0;
+      const img = Utils.el("img", { alt: "", loading: "lazy" });
+      img.addEventListener("error", () => {
+        index += 1;
+        if (index < list.length) img.src = list[index];
+        else fail();
+      });
+      img.src = list[0];
+      host.appendChild(img);
+    }
+
     if (!list.length) { fail(); return; }
-    let index = 0;
-    const img = Utils.el("img", { alt: "", loading: "lazy" });
-    img.addEventListener("error", () => {
-      index += 1;
-      if (index < list.length) img.src = list[index];
-      else fail();
-    });
-    img.src = list[0];
-    host.appendChild(img);
+    build();
+    bannerImageRetry.add(recheck);
+    bindBannerImageRetry();
   }
 
   function buildSlide(def, opts) {

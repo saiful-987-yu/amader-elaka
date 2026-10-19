@@ -473,6 +473,15 @@ a:hover { text-decoration: underline; }
   .banner--emergency { left: 50%; right: auto; width: var(--banner-w); margin: 0; transform: translateX(-50%); }
 }
 
+/* Driver categories and Other Section categories: the heading sits below the banner, so the breadcrumb sits near the bottom of the banner, as far above the banner's bottom edge as it used to sit below its top edge. */
+.banner-zone--head-below > .breadcrumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  bottom: max(18px, calc(var(--banner-w) / 2 - max(147px, var(--zone-min)) - 2 * var(--space-2)));
+}
+
 /* Emergency page text over the banner: bright colours with a dark outline,
    readable on any picture in both Light and Dark theme. */
 .banner-zone .breadcrumb__link,
@@ -2528,6 +2537,11 @@ a:hover { text-decoration: underline; }
 .notice-card--has-bg .notice-card__date,
 .notice-card--has-bg .notice-card__text { color: rgba(255, 255, 255, 0.9); }
 .notice-card--has-bg .notice-card__link { color: #FFFFFF; border-color: rgba(255, 255, 255, 0.7); }
+.notice-card__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-3); }
+.notice-card__foot .notice-card__link { margin-top: 0; }
+.notice-card__foot .notice-card__speak { margin-left: auto; width: 32px; height: 32px; }
+.notice-card__foot .notice-card__speak svg { width: 22px; height: 22px; }
+.notice-card--has-bg .notice-card__speak { color: #FFFFFF; }
 .home-notice-more__bar { display: flex; justify-content: center; margin-bottom: var(--space-4); }
 .home-notice-more__bar .home-bazar__notice-head {
   flex: 0 1 auto; min-width: min(100%, 15rem); justify-content: center; gap: var(--space-3);

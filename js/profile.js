@@ -481,33 +481,58 @@
   }
 
   function openEditProfileModal(driver, onSaved) {
-    const nameBnField = formField({ id: "editNameBn", labelText: Lang.t("profile.bengaliName"), value: driver.nameBn });
-    const guardianField = formField({ id: "editGuardian", labelText: Lang.t("profile.guardianName"), value: driver.guardianName });
-    const altPhoneField = formField({ id: "editAltPhone", labelText: Lang.t("driver.altPhone"), type: "tel", value: driver.altPhone });
-    const whatsappField = formField({ id: "editWhatsapp", labelText: Lang.t("driver.whatsapp"), type: "tel", value: driver.whatsapp });
-    const serviceAreaField = formField({ id: "editServiceArea", labelText: Lang.t("driver.serviceArea"), value: driver.serviceArea });
-    const vehicleNumberField = formField({ id: "editVehicleNumber", labelText: Lang.t("detail.regNumber"), value: driver.vehicleNumber });
-    const qualificationField = driver.doctor
-      ? formField({ id: "editQualification", labelText: Utils.qualificationLabel(), value: driver.qualification })
-      : null;
-    const extraDefs = Utils.extraFieldDefs(Utils.splitMulti(driver.vehicleType));
-    const extraFields = extraDefs.map((def, i) => ({
-      key: "extra" + (i + 1),
-      field: formField({ id: "editExtra" + (i + 1), labelText: Utils.extraLabel(def), value: driver["extra" + (i + 1)] })
-    }));
+    const RF = window.RegistrationForm;
+    const form = Utils.el("form", { novalidate: "novalidate" });
+
+    const personal = RF.createPersonalRows(form, null, null);
+    const pf = personal.fields;
+    const twoCol = (a, b) => Utils.el("div", { class: "field-row-2col" }, [a.wrap, b.wrap]);
+
+    const ownCategories = Utils.splitMulti(driver.vehicleType);
+    const category = RF.createCategoryRows({
+      vehicleOptions: ownCategories.map((slug) => ({ value: slug, label: slug, search: slug })),
+      marketOptions: [],
+      clearHidden: false
+    });
+    const cf = category.fields;
+    cf.vehicleType.wrap.querySelectorAll("input[type=checkbox]").forEach((cb) => { cb.checked = true; });
+    category.updateExtraFields();
+
+    const experienceText = Utils.clean(driver.experience);
+    const experienceInput = cf.experience.wrap.querySelector("#experienceValue");
+    const experienceUnit = cf.experience.wrap.querySelector("#experienceUnit");
+    const fromMatch = experienceText.match(/^from\s+(\d{4})$/i);
+    const spanMatch = experienceText.match(/^(\d+(?:\.\d+)?)\s*(years?|months?)$/i);
+    if (fromMatch) { experienceInput.value = fromMatch[1]; experienceUnit.value = "from"; }
+    else if (spanMatch) { experienceInput.value = spanMatch[1]; experienceUnit.value = /^month/i.test(spanMatch[2]) ? "months" : "years"; }
+    experienceUnit.dispatchEvent(new Event("change"));
+
+    pf.fullName.control.value = driver.name || "";
+    pf.fullNameBn.control.value = driver.nameBn || "";
+    pf.guardianName.control.value = driver.guardianName || "";
+    pf.altMobile.control.value = driver.altPhone || "";
+    pf.whatsapp.control.value = driver.whatsapp || "";
+    cf.vehicleNumber.control.value = driver.vehicleNumber || "";
+    cf.serviceArea.control.value = driver.serviceArea || "";
+    cf.qualification.control.value = driver.qualification || "";
+    cf.extra.forEach((row, i) => { row.control.value = driver["extra" + (i + 1)] || ""; });
 
     const saveBtn = Utils.el("button", { type: "submit", class: "btn btn--primary btn--block mt-5", text: Lang.t("profile.save") });
 
-    const form = Utils.el("form", {}, [
-      Utils.el("div", { class: "profile-form-grid profile-form-grid--2col" }, [nameBnField.wrap, guardianField.wrap]),
-      Utils.el("div", { class: "profile-form-grid profile-form-grid--2col" }, [altPhoneField.wrap, whatsappField.wrap]),
-      serviceAreaField.wrap,
-      vehicleNumberField.wrap
-    ].concat(
-      qualificationField ? [qualificationField.wrap] : [],
-      extraFields.map((x) => x.field.wrap),
-      [saveBtn]
-    ));
+    [
+      pf.fullName,
+      twoCol(pf.fullNameBn, pf.guardianName),
+      twoCol(pf.altMobile, pf.whatsapp),
+      pf.village,
+      twoCol(pf.postOffice, pf.union),
+      twoCol(pf.upazila, pf.district),
+      pf.fullAddress,
+      cf.vehicleNumber,
+      cf.serviceArea,
+      category.rows[4],
+      category.rows[5]
+    ].forEach((row) => form.appendChild(row.wrap || row));
+    form.appendChild(saveBtn);
 
     const content = Utils.el("div", {}, [
       Utils.el("div", { class: "modal-head" }, [
@@ -517,18 +542,21 @@
       form
     ]);
 
+    const isShown = (row) => row.wrap.style.display !== "none";
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      // Name, address and experience are shown in the form but are not sent yet: the backend does not save them.
       const fields = {
-        nameBn: Utils.clean(nameBnField.control.value),
-        guardianName: Utils.clean(guardianField.control.value),
-        altPhone: Utils.clean(altPhoneField.control.value),
-        whatsapp: Utils.clean(whatsappField.control.value),
-        serviceArea: Utils.clean(serviceAreaField.control.value),
-        vehicleNumber: Utils.clean(vehicleNumberField.control.value)
+        nameBn: Utils.clean(pf.fullNameBn.control.value),
+        guardianName: Utils.clean(pf.guardianName.control.value),
+        altPhone: Utils.clean(pf.altMobile.control.value),
+        whatsapp: Utils.clean(pf.whatsapp.control.value),
+        serviceArea: Utils.clean(cf.serviceArea.control.value),
+        vehicleNumber: Utils.clean(cf.vehicleNumber.control.value)
       };
-      if (qualificationField) fields.qualification = Utils.clean(qualificationField.control.value);
-      extraFields.forEach((x) => { fields[x.key] = Utils.clean(x.field.control.value); });
+      if (isShown(cf.qualification)) fields.qualification = Utils.clean(cf.qualification.control.value);
+      cf.extra.forEach((row, i) => { if (isShown(row)) fields["extra" + (i + 1)] = Utils.clean(row.control.value); });
       const changed = Object.keys(fields).some((key) => fields[key] !== Utils.clean(driver[key] || ""));
       if (!changed) { Toast.show(Lang.t("profile.noChanges")); return; }
 

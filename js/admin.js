@@ -283,8 +283,7 @@
         return Utils.el("button", { type: "button", class: "admin-action", onClick }, kids);
       }
       card.appendChild(Utils.el("div", { class: "admin-actions" }, [
-        action(Icons.formPlus, T("Add User", "ইউজার যোগ"), () => Router.navigate("/registration")),
-        action(Icons.formPlus, T("Add Directly", "সরাসরি যোগ"), () => Admin.openCreator()),
+        action(Icons.formPlus, T("Add User", "ইউজার যোগ"), () => Admin.openCreator()),
         action(Icons.star, T("Public Rating", "পাবলিক রেটিং"), () => Admin.openRatings(), "pendingRatings"),
         action(Icons.checkCircle, T("Pending Users", "পেন্ডিং ইউজার"), () => Admin.openPending(), "pendingUsers")
       ]));

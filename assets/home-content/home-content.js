@@ -6,7 +6,8 @@
   - Shown in the "Notices & News" section under the banner (newest first, in the order written here).
   - To remove the section completely, make the list empty: window.HOME_NOTICES = [];
   - Fields: titleEn, titleBn, textEn, textBn (any may be left empty), date (text shown as-is),
-    urgent (true = red highlight), link (optional web address; adds a "Read more" button),
+    urgent (true = red highlight), link (optional web address; adds a "Read more" button.
+    Write "#/driver/<Driver ID>" to open that driver/doctor profile inside the app, on the same page, without reloading),
     bgImage (optional Google Drive photo link used as that notice's own background picture; the Drive file must be
     shared as "Anyone with the link" - leave "" for no picture).
 

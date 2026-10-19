@@ -358,14 +358,28 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 - The chosen bazar is remembered in the browser (`area.selectedMarket`). On the
   first visit a chooser appears, with a "Skip" button that uses the default bazar
   (`DEFAULT_MARKET_SLUG`). The home bar shows the bazar and lets people change it.
-- The home page order is: hero, banner, a bar with the "Notices & News"
-  header (left, 50%, gently animated, its speaker button reads all the notices
-  aloud) and the bazar button (right, 50%), the notices, then the category
-  cards under "Choose what you need". While the bazar chooser is open (after
-  tapping "Change"), the category cards are hidden until a bazar is picked.
+- The home page order is: hero, banner, a one-line bar with the "Notices & News"
+  header (left, 50%, its speaker button reads notice no. 1 aloud) and the bazar
+  button (right, 50%, shows only the bazar name; tapping it opens/closes the
+  bazar chooser), notice no. 1, then the category cards under "Choose what you
+  need". Notices no. 2 and onward appear at the very bottom, below the
+  "Add your information" registration section, under a centered "Notices & News"
+  header whose speaker button reads those notices. While the bazar chooser is
+  open, the category cards are hidden until a bazar is picked.
   Notices and category cards are edited in `assets/home-content/home-content.js`
   (no backend work). A card for an Other category shows "Coming soon" until at
   least one approved profile exists for it in the chosen bazar.
+- Each home notice can have its own background picture: put a Google Drive
+  photo link in that notice's `bgImage` line in `home-content.js` (the Drive file
+  must be shared as "Anyone with the link"; empty = no picture). A dark layer is
+  added automatically so the white text stays readable. Pictures load in the
+  background and never delay the text; once loaded they are kept in the
+  browser's photo cache. There is no local folder for notice pictures.
+- Notice animation: a coloured light runs once around the header's border every
+  ~11 seconds, and runs slowly and continuously around each notice card. It is
+  drawn with a rotating layer (GPU-friendly) and is paused for any notice that
+  is off-screen, so scrolling stays smooth. It is switched off automatically
+  when the phone's "reduce motion" setting is on.
 - Drivers, doctors, the Emergency list, the Other Section and site search
   follow the chosen bazar.
 - The Other Section page lists only categories that do not already have a card

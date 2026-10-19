@@ -6,7 +6,9 @@
   - Shown in the "Notices & News" section under the banner (newest first, in the order written here).
   - To remove the section completely, make the list empty: window.HOME_NOTICES = [];
   - Fields: titleEn, titleBn, textEn, textBn (any may be left empty), date (text shown as-is),
-    urgent (true = red highlight), link (optional web address; adds a "Read more" button).
+    urgent (true = red highlight), link (optional web address; adds a "Read more" button),
+    bgImage (optional Google Drive photo link used as that notice's own background picture; the Drive file must be
+    shared as "Anyone with the link" - leave "" for no picture).
 
   CATEGORIES
   - type "drivers"   -> opens the driver flow of the chosen bazar
@@ -55,7 +57,38 @@ window.HOME_NOTICES = [
     textBn: "আপনার এলাকার ড্রাইভার, ডাক্তারসহ আরও অনেক তথ্য ধাপে ধাপে যুক্ত হচ্ছে। নিয়মিত দেখুন।",
     date: "",
     urgent: false,
-    link: ""
+    link: "",
+    bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
+  },
+  {
+    titleEn: "Follow our Facebook page",
+    titleBn: "আমাদের ফেসবুক পেজ ফলো করুন",
+    textEn: "A Facebook page has been opened in the name of Amader Elaka. Follow it to get new notices, news and updates first, and tell your friends too.",
+    textBn: "আমাদের এলাকা নামে একটি ফেসবুক পেজ খোলা হয়েছে। নতুন নোটিশ, খবর ও আপডেট সবার আগে পেতে পেজটি ফলো করুন এবং বন্ধুদের জানান।",
+    date: "",
+    urgent: false,
+    link: "https://www.facebook.com/REPLACE-WITH-PAGE-LINK",
+    bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
+  },
+  {
+    titleEn: "Bloodless circumcision with a machine",
+    titleBn: "মেশিনের সাহায্যে রক্তপাতহীন মুসলমানি",
+    textEn: "A doctor in our area performs circumcision (Musalmani) with a machine, with no bleeding. See the doctor's profile for details and contact.",
+    textBn: "আমাদের এলাকায় একজন ডাক্তার আছেন, যিনি মেশিনের সাহায্যে মুসলমানি (খতনা) করান, এতে কোনো রক্তপাত হয় না। বিস্তারিত ও যোগাযোগের জন্য ডাক্তারের প্রোফাইল দেখুন।",
+    date: "",
+    urgent: false,
+    link: "https://saiful-987-yu.github.io/amader-elaka/#/driver/DR1213",
+    bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
+  },
+  {
+    titleEn: "Saiful Tournament",
+    titleBn: "সাইফুল টুর্নামেন্ট",
+    textEn: "A big tournament, the Saiful Tournament, will be held in our area on Wednesday, 21 October 2026. Everyone is welcome to come and enjoy. Tap the button to see the venue on the map.",
+    textBn: "বুধবার, ২১ অক্টোবর ২০২৬ তারিখে আমাদের এলাকায় বড় আকারের সাইফুল টুর্নামেন্ট অনুষ্ঠিত হবে। সবাই আমন্ত্রিত, এসে খেলা উপভোগ করুন। স্থান দেখতে নিচের বাটনে চাপুন।",
+    date: "বুধবার, ২১ অক্টোবর ২০২৬",
+    urgent: false,
+    link: "https://www.google.com/maps/search/?api=1&query=REPLACE-WITH-TOURNAMENT-LOCATION",
+    bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   }
 ];
 

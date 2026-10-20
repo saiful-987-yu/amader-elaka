@@ -7,6 +7,35 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
+  "display_override": ["standalone", "minimal-ui"],
+  "prefer_related_applications": false,
+  "categories": ["lifestyle", "navigation", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Emergency · জরুরি যোগাযোগ",
+      "short_name": "Emergency",
+      "url": "./#/emergency",
+      "icons": [{ "src": "assets/brand/pwa-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Find a Doctor · ডাক্তার",
+      "short_name": "Doctor",
+      "url": "./#/doctor",
+      "icons": [{ "src": "assets/brand/pwa-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Search · খুঁজুন",
+      "short_name": "Search",
+      "url": "./#/search",
+      "icons": [{ "src": "assets/brand/pwa-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Register · রেজিস্ট্রেশন",
+      "short_name": "Register",
+      "url": "./#/registration",
+      "icons": [{ "src": "assets/brand/pwa-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "background_color": "#F4F7F5",
   "theme_color": "#1F6E4A",
   "lang": "en",
@@ -23,6 +52,36 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/narrow-home.jpg",
+      "sizes": "1080x2436",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Home"
+    },
+    {
+      "src": "assets/screenshots/narrow-drivers.jpg",
+      "sizes": "1080x2436",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Drivers"
+    },
+    {
+      "src": "assets/screenshots/narrow-doctors.jpg",
+      "sizes": "1080x2436",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Doctors"
+    },
+    {
+      "src": "assets/screenshots/wide-home.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Home"
     }
   ]
 }

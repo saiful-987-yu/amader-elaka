@@ -125,62 +125,187 @@
     app.innerHTML = "";
     if (Auth.isLoggedIn()) { Router.navigate("/profile"); return; }
 
-    const idInput = Utils.el("input", { id: "identifier", type: "text", autocomplete: "username" });
-    const pwInput = Utils.el("input", { id: "password", type: "password", autocomplete: "current-password" });
+    const idInput = Utils.el("input", {
+      id: "identifier", type: "text", autocomplete: "username", autocapitalize: "none", autocorrect: "off", spellcheck: "false",
+      placeholder: Lang.t("login.usernamePlaceholder")
+    });
+    const pwInput = Utils.el("input", {
+      id: "password", type: "password", autocomplete: "current-password",
+      placeholder: Lang.t("login.passwordPlaceholder")
+    });
 
-    const pwWrap = Utils.el("div", { class: "password-field" }, [pwInput]);
     const pwToggle = Utils.el("button", {
-      type: "button", "aria-label": Lang.t("login.showPassword"), html: Icons.eye,
+      type: "button", class: "login-eye", "aria-label": Lang.t("login.showPassword"), html: Icons.eye,
       onClick: () => {
         const showing = pwInput.type === "text";
         pwInput.type = showing ? "password" : "text";
         pwToggle.innerHTML = showing ? Icons.eye : Icons.eyeOff;
+        pwToggle.setAttribute("aria-label", Lang.t(showing ? "login.showPassword" : "login.hidePassword"));
       }
     });
-    pwWrap.appendChild(pwToggle);
 
-    const errorMsg = Utils.el("div", { class: "error-msg", style: "display:none;color:var(--color-danger);font-size:var(--font-size-sm);margin-top:var(--space-2);" });
+    function loginField(inputId, labelKey, input, iconHtml, extra) {
+      const err = Utils.el("div", { class: "error-msg", role: "alert" });
+      const box = Utils.el("div", { class: "login-input" }, [
+        Utils.el("span", { class: "login-input__icon", "aria-hidden": "true", html: iconHtml }),
+        input
+      ].concat(extra || []));
+      const field = Utils.el("div", { class: "field" }, [
+        Utils.el("label", { for: inputId, text: Lang.t(labelKey) }),
+        box,
+        err
+      ]);
+      return {
+        field,
+        setError(msg) {
+          err.textContent = msg || "";
+          field.classList.toggle("has-error", !!msg);
+          if (msg) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid");
+        }
+      };
+    }
 
-    const submitBtn = Utils.el("button", { class: "btn btn--primary btn--block", text: Lang.t("login.submit") });
+    const idField = loginField("identifier", "login.usernameLabel", idInput, Icons.user);
+    const pwField = loginField("password", "login.passwordLabel", pwInput, Icons.lock, [pwToggle]);
 
-    const form = Utils.el("form", {}, [
-      Utils.el("div", { class: "field" }, [Utils.el("label", { for: "identifier", text: Lang.t("login.usernameLabel") }), idInput]),
-      Utils.el("div", { class: "field" }, [Utils.el("label", { for: "password", text: Lang.t("login.passwordLabel") }), pwWrap]),
-      errorMsg,
+    const alertIcon = Utils.el("span", { class: "login-alert__icon", "aria-hidden": "true", html: Icons.alertCircle });
+    const alertText = Utils.el("span", { class: "login-alert__text" });
+    const alertBox = Utils.el("div", { class: "login-alert", role: "alert", hidden: "" }, [alertIcon, alertText]);
+
+    function showAlert(msg, kind) {
+      alertText.textContent = msg;
+      alertBox.className = "login-alert" + (kind === "info" ? " login-alert--info" : "");
+      alertBox.hidden = false;
+    }
+    function hideAlert() { alertBox.hidden = true; }
+
+    const submitLabel = Utils.el("span", { class: "login-submit__label", text: Lang.t("login.submit") });
+    const submitBtn = Utils.el("button", { type: "submit", class: "btn btn--primary btn--block login-submit" }, [submitLabel]);
+    const slowHint = Utils.el("p", { class: "login-slow", role: "status", hidden: "" });
+
+    idInput.addEventListener("input", () => { idField.setError(""); hideAlert(); refreshForgotLinks(); });
+    pwInput.addEventListener("input", () => { pwField.setError(""); hideAlert(); });
+
+    const cfg = (window.NOBI_CONFIG && window.NOBI_CONFIG.SOCIAL_LINKS) || {};
+    const adminPhone = Utils.clean(cfg.call) && cfg.call !== "#" ? cfg.call : "";
+    const adminWhatsapp = Utils.clean(cfg.whatsapp) && cfg.whatsapp !== "#" ? cfg.whatsapp : "";
+
+    const waBtn = adminWhatsapp ? Utils.el("a", {
+      class: "btn btn--primary btn--sm login-forgot__btn", target: "_blank", rel: "noopener"
+    }, [Utils.el("span", { "aria-hidden": "true", html: Icons.whatsapp }), Utils.el("span", { text: Lang.t("login.forgotWhatsapp") })]) : null;
+    const callBtn = adminPhone ? Utils.el("a", {
+      class: "btn btn--ghost btn--sm login-forgot__btn", href: "tel:" + Utils.normalizePhone(adminPhone)
+    }, [Utils.el("span", { "aria-hidden": "true", html: Icons.phone }), Utils.el("span", { text: Lang.t("login.forgotCall") })]) : null;
+
+    function refreshForgotLinks() {
+      if (!waBtn) return;
+      const who = Utils.clean(idInput.value) || "____";
+      const msg = Lang.t("login.forgotMessage").split("{id}").join(who);
+      waBtn.href = Utils.waLink(adminWhatsapp) + "?text=" + encodeURIComponent(msg);
+    }
+    refreshForgotLinks();
+
+    const forgotPanel = Utils.el("div", { class: "login-forgot", id: "login-forgot", hidden: "" }, [
+      Utils.el("h3", { class: "login-forgot__title", text: Lang.t("login.forgotTitle") }),
+      Utils.el("p", { class: "login-forgot__text", text: Lang.t("login.forgotText") }),
+      Utils.el("div", { class: "login-forgot__actions" }, [waBtn, callBtn].filter(Boolean))
+    ]);
+    const forgotLink = Utils.el("button", {
+      type: "button", class: "login-forgot__link", "aria-expanded": "false", "aria-controls": "login-forgot",
+      text: Lang.t("login.forgot"),
+      onClick: () => {
+        const open = forgotPanel.hidden;
+        forgotPanel.hidden = !open;
+        forgotLink.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) refreshForgotLinks();
+      }
+    });
+
+    const form = Utils.el("form", { novalidate: "" }, [
+      idField.field,
+      pwField.field,
+      alertBox,
       submitBtn,
+      slowHint,
+      Utils.el("div", { class: "login-forgot__row" }, [forgotLink]),
+      forgotPanel,
       Utils.el("p", { class: "text-center mt-5 hint" }, [
         document.createTextNode(Lang.t("login.noAccount") + " "),
         Utils.el("a", { href: "#/registration", text: Lang.t("login.registerLink") })
       ])
     ]);
 
+    const card = Utils.el("div", { class: "form-card login-card" }, [form]);
+
+    function validate() {
+      const id = Utils.clean(idInput.value);
+      const pw = pwInput.value;
+      let first = null;
+      idField.setError("");
+      pwField.setError("");
+      if (!id) { idField.setError(Lang.t("login.error.usernameRequired")); first = idInput; }
+      if (!pw) { pwField.setError(Lang.t("login.error.passwordRequired")); if (!first) first = pwInput; }
+      else if (pw.length < 6) { pwField.setError(Lang.t("validation.passwordShort")); if (!first) first = pwInput; }
+      if (first) { first.focus(); return false; }
+      return true;
+    }
+
+    let busy = false;
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      errorMsg.style.display = "none";
+      if (busy) return;
+      hideAlert();
+      if (!validate()) return;
+      busy = true;
+      card.classList.add("is-loading");
       submitBtn.disabled = true;
-      const original = submitBtn.textContent;
-      submitBtn.textContent = Lang.t("loading.generic");
+      submitBtn.setAttribute("aria-busy", "true");
+      idInput.readOnly = true;
+      pwInput.readOnly = true;
+      submitLabel.textContent = Lang.t("login.loading");
+      submitBtn.insertBefore(Utils.el("span", { class: "login-spinner", "aria-hidden": "true" }), submitLabel);
+      const slowTimer = setTimeout(() => {
+        slowHint.textContent = Lang.t("login.slow");
+        slowHint.hidden = false;
+      }, 3500);
       try {
         await Auth.login(idInput.value, pwInput.value);
         Router.navigate("/profile");
+        return;
       } catch (err) {
-        let key = "login.error.generic";
-        if (err.code === "PENDING_APPROVAL") key = "login.error.pending";
-        else if (err.code === "INVALID_CREDENTIALS") key = "login.error";
-        errorMsg.textContent = Lang.t(key);
-        errorMsg.style.display = "block";
+        if (err.code === "PENDING_APPROVAL") showAlert(Lang.t("login.error.pending"), "info");
+        else if (err.code === "INVALID_CREDENTIALS") showAlert(Lang.t("login.error"));
+        else showAlert(Lang.t("login.error.generic"));
+        card.classList.remove("login-card--shake");
+        void card.offsetWidth;
+        card.classList.add("login-card--shake");
       } finally {
+        clearTimeout(slowTimer);
+        busy = false;
+        card.classList.remove("is-loading");
         submitBtn.disabled = false;
-        submitBtn.textContent = original;
+        submitBtn.removeAttribute("aria-busy");
+        idInput.readOnly = false;
+        pwInput.readOnly = false;
+        const spin = submitBtn.querySelector(".login-spinner");
+        if (spin) spin.remove();
+        submitLabel.textContent = Lang.t("login.submit");
+        slowHint.hidden = true;
       }
     });
 
-    app.appendChild(Utils.el("section", { class: "section container" }, [
-      Utils.el("div", { class: "section-head text-center" }, [
+    const badge = Utils.el("div", { class: "login-badge", "aria-hidden": "true" });
+    const badgeImg = Utils.el("img", { src: "assets/brand/logo-low.png", alt: "", width: "64", height: "64" });
+    badgeImg.onerror = () => { badge.innerHTML = Icons.userLarge; };
+    badge.appendChild(badgeImg);
+
+    app.appendChild(Utils.el("section", { class: "section container login-page" }, [
+      Utils.el("div", { class: "section-head text-center login-head" }, [
+        badge,
         Utils.el("h2", { text: Lang.t("login.heading") }),
         Utils.el("p", { text: Lang.t("login.sub") })
       ]),
-      Utils.el("div", { class: "form-card" }, [form])
+      card
     ]));
   }
 
@@ -498,18 +623,25 @@
     cf.vehicleType.wrap.querySelectorAll("input[type=checkbox]").forEach((cb) => { cb.checked = true; });
     category.updateExtraFields();
 
-    const experienceText = Utils.clean(driver.experience);
+    const experienceText = Utils.clean(driver.experience).replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
     const experienceInput = cf.experience.wrap.querySelector("#experienceValue");
     const experienceUnit = cf.experience.wrap.querySelector("#experienceUnit");
-    const fromMatch = experienceText.match(/^from\s+(\d{4})$/i);
-    const spanMatch = experienceText.match(/^(\d+(?:\.\d+)?)\s*(years?|months?)$/i);
+    const fromMatch = experienceText.match(/^from\s+(\d{1,4})$/i) || experienceText.match(/^(\d{1,4})\s*(?:সাল\s*)?থেকে$/);
+    const spanMatch = experienceText.match(/^(\d+(?:\.\d+)?)\s*(years?|yrs?|months?|বছর|মাস)$/i);
     if (fromMatch) { experienceInput.value = fromMatch[1]; experienceUnit.value = "from"; }
-    else if (spanMatch) { experienceInput.value = spanMatch[1]; experienceUnit.value = /^month/i.test(spanMatch[2]) ? "months" : "years"; }
+    else if (spanMatch) { experienceInput.value = spanMatch[1]; experienceUnit.value = /^(month|মাস)/i.test(spanMatch[2]) ? "months" : "years"; }
     experienceUnit.dispatchEvent(new Event("change"));
+    const experienceInitial = experienceInput.value + "|" + experienceUnit.value;
 
     pf.fullName.control.value = driver.name || "";
     pf.fullNameBn.control.value = driver.nameBn || "";
     pf.guardianName.control.value = driver.guardianName || "";
+    pf.village.control.value = driver.village || "";
+    pf.postOffice.control.value = driver.postOffice || "";
+    pf.union.control.value = driver.union || "";
+    pf.upazila.control.value = driver.upazila || "";
+    pf.district.control.value = driver.district || "";
+    pf.fullAddress.control.value = driver.fullAddress || "";
     pf.altMobile.control.value = driver.altPhone || "";
     pf.whatsapp.control.value = driver.whatsapp || "";
     cf.vehicleNumber.control.value = driver.vehicleNumber || "";
@@ -544,10 +676,20 @@
 
     const isShown = (row) => row.wrap.style.display !== "none";
 
+    const setNameError = (row, message) => {
+      row.wrap.classList.toggle("has-error", !!message);
+      const err = row.wrap.querySelector(".error-msg");
+      if (err) err.textContent = message || "";
+    };
+    [pf.fullName, pf.fullNameBn].forEach((row) => row.control.addEventListener("input", () => setNameError(row, "")));
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      // Name, address and experience are shown in the form but are not sent yet: the backend does not save them.
+      const nameRows = [pf.fullName, pf.fullNameBn].filter((row) => !Utils.clean(row.control.value));
+      [pf.fullName, pf.fullNameBn].forEach((row) => setNameError(row, nameRows.includes(row) ? Lang.t("validation.required") : ""));
+      if (nameRows.length) { nameRows[0].control.focus(); return; }
       const fields = {
+        name: Utils.clean(pf.fullName.control.value),
         nameBn: Utils.clean(pf.fullNameBn.control.value),
         guardianName: Utils.clean(pf.guardianName.control.value),
         altPhone: Utils.clean(pf.altMobile.control.value),
@@ -555,6 +697,16 @@
         serviceArea: Utils.clean(cf.serviceArea.control.value),
         vehicleNumber: Utils.clean(cf.vehicleNumber.control.value)
       };
+      [["village", pf.village], ["postOffice", pf.postOffice], ["union", pf.union], ["upazila", pf.upazila], ["district", pf.district], ["fullAddress", pf.fullAddress]].forEach(([key, row]) => {
+        const value = Utils.clean(row.control.value);
+        if (value || Utils.clean(driver[key] || "")) fields[key] = value;
+      });
+      const experienceValue = Utils.clean(experienceInput.value);
+      if (experienceValue && experienceValue + "|" + experienceUnit.value !== experienceInitial) {
+        fields.experience = experienceUnit.value === "from"
+          ? "From " + experienceValue
+          : experienceValue + " " + (experienceUnit.value === "months" ? "Months" : "Years");
+      }
       if (isShown(cf.qualification)) fields.qualification = Utils.clean(cf.qualification.control.value);
       cf.extra.forEach((row, i) => { if (isShown(row)) fields["extra" + (i + 1)] = Utils.clean(row.control.value); });
       const changed = Object.keys(fields).some((key) => fields[key] !== Utils.clean(driver[key] || ""));
@@ -571,6 +723,7 @@
         if (onSaved) onSaved();
       } catch (err) {
         if (err.code === "SESSION_EXPIRED") {
+          Auth.logout();
           Toast.show(Lang.t("error.sessionExpired"), "error");
           Modal.close();
           Router.navigate("/login");
@@ -624,6 +777,7 @@
         Toast.show(Lang.t("profile.passwordUpdated"), "success");
       } catch (err) {
         if (err.code === "SESSION_EXPIRED") {
+          Auth.logout();
           Toast.show(Lang.t("error.sessionExpired"), "error");
           Modal.close();
           Router.navigate("/login");

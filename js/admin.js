@@ -66,6 +66,7 @@
         clearState(false);
         if (Modal.close) Modal.close();
         if (err.code === "SESSION_EXPIRED") {
+          Auth.logout();
           Toast.show(Lang.t("error.sessionExpired"), "error");
           Router.navigate("/login");
         } else {
@@ -197,7 +198,7 @@
       } catch (e2) {
         if (e2 && e2.code === "INVALID_CREDENTIALS") err.textContent = T("Incorrect password.", "পাসওয়ার্ড ভুল।");
         else if (e2 && e2.code === "NOT_ADMIN") { Modal.close(); Toast.show(T("This account is not an admin.", "এই অ্যাকাউন্ট অ্যাডমিন নয়।"), "error"); }
-        else if (e2 && e2.code === "SESSION_EXPIRED") { Modal.close(); Toast.show(Lang.t("error.sessionExpired"), "error"); Router.navigate("/login"); }
+        else if (e2 && e2.code === "SESSION_EXPIRED") { Auth.logout(); Modal.close(); Toast.show(Lang.t("error.sessionExpired"), "error"); Router.navigate("/login"); }
         else err.textContent = Lang.t("error.generic");
         submit.textContent = label;
         submit.disabled = false;

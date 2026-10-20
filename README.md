@@ -1,8 +1,56 @@
-# আমাদের এলাকা (Amader Elaka)
+<div align="center">
 
-> This project started as "Amader Drivers" and is now an area directory. Sections
-> 3.7 and 3.8 below describe the area-directory features added later; where older
-> text still says "driver" or "vehicle type", read it as "listing" and "category".
+<img src="assets/brand/logo-medium.png" width="130" alt="Amader Elaka logo" />
+
+# আমাদের এলাকা · Amader Elaka
+
+**ড্রাইভার, ডাক্তার, দোকান, মসজিদ ও জরুরি সেবা — আপনার এলাকার সব ফোন নম্বর এক জায়গায়।**
+*Your area's drivers, doctors, shops, mosques and emergency contacts — in one place.*
+
+[🌐 Open the site](https://saiful-987-yu.github.io/amader-elaka/) &nbsp;·&nbsp; [📱 Download the Android app](https://github.com/saiful-987-yu/amader-elaka/releases/latest/download/Amader-Elaka.apk) &nbsp;·&nbsp; [📦 All releases](https://github.com/saiful-987-yu/amader-elaka/releases)
+
+</div>
+
+---
+
+## ✨ At a glance
+
+| | |
+|---|---|
+| 🧭 **What it is** | A bilingual (English / বাংলা) local directory — drivers, doctors, shops, mosques, emergency contacts and more |
+| 🌐 **Live site** | [https://saiful-987-yu.github.io/amader-elaka/](https://saiful-987-yu.github.io/amader-elaka/) |
+| 📱 **Android app** | Installable APK (Trusted Web Activity), always loads the live site — see [§9](#9-android-app-apk) |
+| 🗄️ **Database** | Google Sheets, through a small Google Apps Script backend (`google-apps-script/Code.gs`) |
+| 🧪 **Demo mode** | Works with sample data and no backend — see [§2](#2-running-it-locally-demo-mode-no-setup) |
+| 🏗️ **Build step** | None. Plain HTML / CSS / JS, hosted on GitHub Pages |
+| 🔖 **Cache version** | `CACHE_VERSION` in `sw.js` (currently `v6`) |
+
+## 🧭 Contents
+
+| # | Section |
+|---|---|
+| – | [Overview](#overview) |
+| 1 | [Project structure](#1-project-structure) |
+| 2 | [Running it locally (demo mode)](#2-running-it-locally-demo-mode-no-setup) |
+| 3 | [Connecting a real Google Sheet](#3-connecting-a-real-google-sheet) |
+| 4 | [How to add things later](#4-how-to-add-things-later) |
+| 5 | [Driver login & availability](#5-driver-login--availability) |
+| 5.5 – 5.9 | Banners · Performance · PWA & service worker · Local photos · Install screenshots |
+| 6 | [Known limitations](#6-known-limitations) |
+| 7 | [Security notes](#7-security-notes) |
+| 8 | [Deploying the site itself](#8-deploying-the-site-itself) |
+| 9 | [📱 Android app (APK)](#9-android-app-apk) |
+| 10 | [🗺️ Roadmap & pending tasks](#10-roadmap--pending-tasks) |
+
+> [!NOTE]
+> This project started as **"Amader Drivers"** and is now an area directory. Sections 3.7 and 3.8 below describe the area-directory features added later; where older text still says "driver" or "vehicle type", read it as **"listing"** and **"category"**.
+
+> [!IMPORTANT]
+> **Pending main goal:** move the users of the old *Amader Driver* site/app over to this one. The plan and checklist are in [§10](#10-roadmap--pending-tasks) so it is not forgotten.
+
+---
+
+## Overview
 
 A lightweight, bilingual (English/বাংলা) local driver directory. A customer
 scans a QR code, picks a bazar, picks a vehicle type (CNG / Auto / Van /
@@ -71,7 +119,7 @@ project/
 │   └── admin.js          # Admin Mode: dashboard, record editing, Pending Users, Public Rating review
 ├── assets/
 │   ├── images/           # og-cover.jpg (social-share cover image)
-│   ├── brand/            # logo, favicons, PWA icons (see its own README)
+│   ├── brand/            # logo, favicons, PWA + maskable app icons (see its own README)
 │   ├── icons/            # favicon.svg, sacarmart-logo.svg
 │   ├── banner-images/    # banner pictures + banner-videos.js (see its own README)
 │   ├── screenshots/      # install-dialog screenshots listed in manifest.json (see its own README)
@@ -86,6 +134,9 @@ project/
 └── google-apps-script/
     └── Code.gs           # backend for real Google Sheets access
 ```
+
+> [!NOTE]
+> **Two repositories work together.** This repository (`amader-elaka`) is the site itself. A second repository named **`saiful-987-yu.github.io`** sits at the domain root and holds only `.well-known/assetlinks.json`, which lets the Android app open full-screen with no address bar. Details in [§9](#9-android-app-apk).
 
 ---
 
@@ -559,7 +610,7 @@ in the browser's `localStorage` (not just in memory), so:
 ## 5.7 Installable app (PWA) & service worker
 
 - `manifest.json` makes the site installable (standalone display, green
-  theme color, 192/512 px icons from `assets/brand/`). On supported browsers
+  theme color, 192/512 px icons plus a 512 px **maskable** icon from `assets/brand/`). On supported browsers
   a small banner (`js/pwa-install.js`) offers **Add to Home Screen**; on iOS
   it shows the manual steps instead. Dismissing it hides it for 1 day.
 - `sw.js` caches the app shell — `index.html`, CSS, JS, `config/config.js`,
@@ -621,10 +672,7 @@ address. See the README inside each folder for details.
 - `manifest.json` also has `launch_handler` (`navigate-existing`): opening
   the app from a link or a shortcut reuses the already-open app window
   instead of starting a second one.
-- Converting to an APK (for example with PWABuilder): the site is served from
-  a sub-folder (`.../amader-elaka/`), while Android's Digital Asset Links file
-  (`.well-known/assetlinks.json`) must sit at the **root** of the domain. Without
-  it the APK still works but shows the browser address bar at the top.
+- **Converting to an APK is done** — see [§9](#9-android-app-apk). The site is served from a sub-folder (`.../amader-elaka/`), while Android's Digital Asset Links file (`.well-known/assetlinks.json`) must sit at the **root** of the domain; that is why the second repository `saiful-987-yu.github.io` exists. Without that file the APK still works but shows the browser address bar at the top.
 
 ---
 
@@ -677,3 +725,111 @@ HTTPS (GitHub Pages already is).
 The site is a single page (`index.html`) with hash-based routing
 (`#/drivers/nobi-bazar/cng`, etc.), so it will not 404 on refresh when
 hosted on GitHub Pages or any other static host.
+
+> [!TIP]
+> The project is made of **two** GitHub repositories — this site (`amader-elaka`) and the domain-root repository (`saiful-987-yu.github.io`, for the Android app's verification file). See [§9](#9-android-app-apk).
+
+---
+
+## 9. Android app (APK)
+
+The Android app is a **Trusted Web Activity (TWA)** built with [PWABuilder](https://www.pwabuilder.com): a thin Android shell that opens the live website full-screen. There is no separate app code to maintain.
+
+### 9.1 At a glance
+
+| Item | Value |
+|---|---|
+| App name | Amader Elaka |
+| Package ID | `io.github.saiful987yu.amaderelaka` |
+| Loads | `https://saiful-987-yu.github.io/amader-elaka/` |
+| Current release | **v1.0.0** (`Amader-Elaka.apk`, ≈ 3.4 MB) |
+| Direct download (always the latest) | `https://github.com/saiful-987-yu/amader-elaka/releases/latest/download/Amader-Elaka.apk` |
+| Release page | `https://github.com/saiful-987-yu/amader-elaka/releases` |
+| Display mode | Standalone, fallback to Custom Tabs |
+| Distribution | Direct APK sharing (WhatsApp / link). Not on Google Play |
+
+### 9.2 Updates — what needs a new APK and what does not
+
+| Change | New APK needed? |
+|---|---|
+| Any change to the website (code, design, photos, banners, Google Sheet) | ❌ No — every installed app shows it automatically |
+| Visitors must see changed app files right away | Ask for a **service-worker version bump** (`CACHE_VERSION` in `sw.js`) — it is only changed on request |
+| App name, icon, package ID or colours of the Android shell | ✅ Yes — rebuild in PWABuilder |
+| Signing key changed or lost | ✅ Yes — and users must uninstall the old app first |
+
+### 9.3 The two repositories
+
+| Repository | Contains | Pages URL |
+|---|---|---|
+| `amader-elaka` | The whole website (this repo) + the APK in **Releases** | `saiful-987-yu.github.io/amader-elaka/` |
+| `saiful-987-yu.github.io` | `.well-known/assetlinks.json`, `.nojekyll`, README | `saiful-987-yu.github.io/` (domain root) |
+
+`assetlinks.json` must be reachable at `https://saiful-987-yu.github.io/.well-known/assetlinks.json`. Its `package_name` and `sha256_cert_fingerprints` must match the APK's package ID and signing key exactly, otherwise the app shows the browser address bar. `.nojekyll` must stay in that repo, or GitHub Pages hides the `.well-known` folder.
+
+### 9.4 Publishing an APK on GitHub Releases
+
+1. Open **`amader-elaka` → Releases → Draft a new release**.
+2. **Tag:** a new version such as `v1.0.1` (create it in the box), **Target:** `main`.
+3. **Title:** `আমাদের এলাকা · Amader Elaka v1.0.1`, and short release notes.
+4. Drag the APK into the upload box. **Keep the file name `Amader-Elaka.apk`** (no spaces) so the "latest" download link above never changes.
+5. Wait until the upload finishes, then press **Publish release**.
+
+### 9.5 Rebuilding the APK (only when Section 9.2 says so)
+
+1. Make sure the latest `manifest.json` and icons are live on GitHub Pages.
+2. Open [pwabuilder.com](https://www.pwabuilder.com), enter `https://saiful-987-yu.github.io/amader-elaka/`, choose **Android → Other Android**.
+3. Keep: Package ID `io.github.saiful987yu.amaderelaka`, Host `saiful-987-yu.github.io`, Start URL `/amader-elaka/`, Display mode *Standalone*, Fallback *Custom Tabs*. **Increase *Version code* by 1** (and the version text) for every new build.
+4. **Signing key → use the existing key** (`signing.keystore`). Never create a new one for an update of the same app.
+5. Download the package, publish the new APK as in §9.4, and — only if the key or package changed — update `assetlinks.json` in the root-domain repository.
+
+### 9.6 Keystore safety
+
+> [!WARNING]
+> `signing.keystore` and `signing-key-info.txt` (it contains the passwords) must **never** be uploaded to GitHub, shared, or sent to anyone. Keep at least two private backups (for example a drive and a pen drive). If the keystore is lost, the same app can no longer be updated — a new app with a new key would be needed and users would have to reinstall.
+
+### 9.7 Troubleshooting
+
+| Problem | What to check |
+|---|---|
+| Address bar shows inside the app | Open `https://saiful-987-yu.github.io/.well-known/assetlinks.json` in a browser. It must load and match the APK's package + fingerprint. Then clear the app's data (Settings → Apps → Amader Elaka) and reopen |
+| `assetlinks.json` gives 404 | `.nojekyll` and `.well-known/` must be in the root-domain repo, and GitHub Pages must be on (`main` branch) |
+| APK will not install | Allow "install from this source"; uninstall an older copy that was signed with a different key |
+| Old content still shows | The service worker is holding old files — request a `CACHE_VERSION` bump |
+
+---
+
+## 10. Roadmap & pending tasks
+
+### 10.1 ⏳ Pending — bring the old "Amader Driver" users to this site and app
+
+**Goal / লক্ষ্য:** The old site/app (*Amader Driver*) is still running, and its link and wall QR codes are already out in the area. After the remaining updates on this project are finished, those users must be moved here — **without deleting the old repository.**
+পুরোনো *আমাদের ড্রাইভার* সাইট/অ্যাপ এখনো চালু এবং দেয়ালে QR কোড লাগানো আছে। বাকি আপডেট শেষ হলে পুরোনো ইউজারদের এখানে আনতে হবে — **তবে পুরোনো রিপো মুছে ফেলা যাবে না।**
+
+**Plan (do it last):**
+
+- [ ] Finish the remaining updates here and test the APK on at least two phones
+- [ ] Back up the old repository (download its ZIP)
+- [ ] Check that the old wall-QR links (the part after `#`, e.g. `#/drivers/nobi-bazar`) also work on the new site
+- [ ] Replace the old repository's files with only three small files: `index.html` (redirects to the new site and keeps the `#...` part), `404.html` (redirects any old path), and a self-removing `sw.js` (clears the old installs' cache)
+- [ ] In Google Search Console: submit this site's `sitemap.xml` and request indexing of the new URL; do **not** use "Removals"
+- [ ] Test: scan an old QR, open an old installed icon — both must land on the new site
+- [ ] Tell old users (WhatsApp / Facebook): install the new APK and delete the old app
+- [ ] Use the new link in every newly printed poster/QR
+- [ ] Keep the old repository for at least a year (as long as old QR codes remain on walls)
+- [ ] Confirm all data now lives in the new Google Sheet
+
+> [!NOTE]
+> Already-installed old apps cannot be updated by us; they will redirect to the new site but may still show a browser bar until users install the new APK. Google search results change slowly (days to weeks), and the old link keeps working in the meantime.
+
+### 10.2 ✅ Done
+
+- [x] Area-directory features (home notices, categories, Other Section, Doctors, Emergency)
+- [x] Installable PWA with service worker
+- [x] Android APK (v1.0.0) built, signed and published on GitHub Releases
+- [x] Domain-root repository with `assetlinks.json`
+- [x] Maskable app icon added
+
+### 10.3 💡 Ideas / later
+
+- [ ] Add the APK download button inside the site's install banner
+- [ ] Add real screenshots for the install dialog (see `assets/screenshots/README.md`)

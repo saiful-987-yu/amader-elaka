@@ -7,20 +7,17 @@ Sheet tabs and column headers: see README.md.
 const SHEET_DRIVERS = "Users";
 const SHEET_PENDING = "Pending Users";
 const SHEET_MARKETS = "Markets";
-const SHEET_VEHICLES = "Vehicle Categories";
+const SHEET_VEHICLES = "All Categories";
 const SHEET_SESSIONS = "Sessions";
 const SHEET_RATINGS = "Public Ratings";
 const SHEET_ADMIN_HISTORY = "Admin Editor History";
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const SESSION_RENEW_AFTER_MS = 1000 * 60 * 60 * 24;
 const DOCTOR_CATEGORY_SLUG = "doctor";
 const DATE_FORMAT = "dd-MM-yy HH:mm";
 const DATE_TIMEZONE = "Asia/Dhaka";
-const TEXT_DATE_HEADERS = ["Created Date", "Updated Date", "Submitted Date", "Date Time"];
-
-const SHEET_ALIASES = {
-"Vehicle Categories": ["All Categories"]
-};
+const TEXT_DATE_HEADERS = ["Created Date", "Updated Date", "Submitted Date", "Date Time", "Expires At"];
 
 const HEADER_ALIASES = {
 "Profile ID": "Driver ID",
@@ -92,10 +89,7 @@ return ContentService.createTextOutput(JSON.stringify(obj))
 }
 
 function sheet(name) {
-const ss = SpreadsheetApp.getActiveSpreadsheet();
-let s = ss.getSheetByName(name);
-const aliases = SHEET_ALIASES[name] || [];
-for (let i = 0; i < aliases.length && !s; i++) s = ss.getSheetByName(aliases[i]);
+const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
 if (!s) throw appError("MISSING_SHEET_" + name.toUpperCase().replace(/ /g, "_"));
 return s;
 }
@@ -158,6 +152,10 @@ return err;
 }
 
 function clean(v) { return (v == null ? "" : String(v)).trim(); }
+
+function msText(ms) {
+return Utilities.formatDate(new Date(ms), DATE_TIMEZONE, DATE_FORMAT);
+}
 
 function nowText() {
 return Utilities.formatDate(new Date(), DATE_TIMEZONE, DATE_FORMAT);
@@ -273,7 +271,7 @@ imageUrl: clean(r["Driver Image URL"]),
 vehicleImageUrl: clean(r["Vehicle Image URL"]),
 availability: slugOf(r["Availability"]) === "active" ? "active" : "inactive",
 emergency: slugOf(r["Emergency Contact"]) === "true",
-doctor: slugOf(r["Doctor Status"]) === "true" || multiIncludes(r["Vehicle Type"], DOCTOR_CATEGORY_SLUG),
+doctor: multiIncludes(r["Vehicle Type"], DOCTOR_CATEGORY_SLUG),
 qualification: clean(r["Qualification"]),
 extra1: clean(r["Extra 1"]),
 extra2: clean(r["Extra 2"]),
@@ -432,6 +430,12 @@ return Object.assign(publicDriverFields(row), {
 accountStatus: slugOf(row["Status"]) || "active",
 username: clean(row["Username"]),
 guardianName: clean(row["Father/Husband Name"]),
+village: clean(row["Village"]),
+postOffice: clean(row["Post Office"]),
+union: clean(row["Union"]),
+upazila: clean(row["Upazila"]),
+district: clean(row["District"]),
+fullAddress: clean(row["Full Address"]),
 isAdmin: isAdminRow(row)
 });
 }
@@ -451,12 +455,12 @@ const values = s.getRange(2, 1, lastRow - 1, 3).getValues();
 const now = Date.now();
 const keep = values.filter((r) => {
 if (clean(r[0]) === "") return false;
-const t = new Date(r[2]).getTime();
+const t = parseDateValue(r[2]);
 return !isNaN(t) && t >= now;
 });
 if (keep.length === values.length) return;
 s.getRange(2, 1, values.length, 3).clearContent();
-if (keep.length) s.getRange(2, 1, keep.length, 3).setNumberFormat("@").setValues(keep.map((r) => [String(r[0]), String(r[1]), r[2] instanceof Date ? r[2].toISOString() : String(r[2])]));
+if (keep.length) s.getRange(2, 1, keep.length, 3).setNumberFormat("@").setValues(keep.map((r) => [String(r[0]), String(r[1]), dateText(r[2])]));
 dropRowMemo();
 }
 
@@ -471,7 +475,7 @@ try { purgeExpiredSessions(); } catch (err) { Logger.log("purgeExpiredSessions f
 appendRow(SHEET_SESSIONS, {
 "Token": token,
 "Driver ID": driverId,
-"Expires At": new Date(expiresAt).toISOString()
+"Expires At": msText(expiresAt)
 });
 } finally {
 lock.releaseLock();
@@ -488,6 +492,36 @@ s.appendRow(["Token", "Driver ID", "Expires At"]);
 }
 }
 
+function sessionNeedsRenewal(expiresAt) {
+return Number(expiresAt) - Date.now() < SESSION_TTL_MS - SESSION_RENEW_AFTER_MS;
+}
+
+function renewSession(token, currentExpiresAt) {
+const next = Date.now() + SESSION_TTL_MS;
+try {
+const lock = LockService.getScriptLock();
+lock.waitLock(5000);
+try {
+const s = sheet(SHEET_SESSIONS);
+const lastRow = s.getLastRow();
+if (lastRow < 2) return currentExpiresAt;
+const tokens = s.getRange(2, 1, lastRow - 1, 1).getValues();
+for (let i = 0; i < tokens.length; i++) {
+if (clean(tokens[i][0]) === token) {
+s.getRange(i + 2, 3).setNumberFormat("@").setValue(msText(next));
+dropRowMemo();
+return next;
+}
+}
+} finally {
+lock.releaseLock();
+}
+} catch (err) {
+Logger.log("renewSession failed: " + err);
+}
+return currentExpiresAt;
+}
+
 function resolveSession(token) {
 if (!token) throw appError("SESSION_EXPIRED");
 const cache = CacheService.getScriptCache();
@@ -495,7 +529,7 @@ const cachedRaw = cache.get(sessionCacheKey(token));
 if (cachedRaw) {
 try {
 const c = JSON.parse(cachedRaw);
-if (c && c.d && Number(c.e) > Date.now()) return c.d;
+if (c && c.d && Number(c.e) > Date.now() && !sessionNeedsRenewal(c.e)) return c.d;
 } catch (err) {
 }
 }
@@ -503,10 +537,11 @@ ensureSessionsSheet();
 const rows = readRows(SHEET_SESSIONS);
 const match = rows.find((r) => clean(r["Token"]) === token);
 if (!match) throw appError("SESSION_EXPIRED");
-const expiresAt = new Date(match["Expires At"]).getTime();
+const expiresAt = parseDateValue(match["Expires At"]);
 if (isNaN(expiresAt) || expiresAt < Date.now()) throw appError("SESSION_EXPIRED");
 const driverId = clean(match["Driver ID"]);
-cache.put(sessionCacheKey(token), JSON.stringify({ d: driverId, e: expiresAt }), SESSION_CACHE_SECONDS);
+const finalExpiresAt = sessionNeedsRenewal(expiresAt) ? renewSession(token, expiresAt) : expiresAt;
+cache.put(sessionCacheKey(token), JSON.stringify({ d: driverId, e: finalExpiresAt }), SESSION_CACHE_SECONDS);
 return driverId;
 }
 
@@ -543,8 +578,16 @@ return driverProfileFields(driverRow);
 function updateProfile(payload) {
 const driverId = resolveSession(payload.token);
 const fieldMap = {
+name: "Name",
 nameBn: "Bengali Name",
 guardianName: "Father/Husband Name",
+village: "Village",
+postOffice: "Post Office",
+union: "Union",
+upazila: "Upazila",
+district: "District",
+fullAddress: "Full Address",
+experience: "Driving Experience",
 altPhone: "Alternative Phone",
 whatsapp: "WhatsApp",
 serviceArea: "Service Area",
@@ -559,7 +602,7 @@ const updates = {};
 Object.keys(fieldMap).forEach((key) => {
 if (payload[key] !== undefined) updates[fieldMap[key]] = clean(payload[key]);
 });
-if (!Object.keys(updates).length) throw appError("VALIDATION_FAILED");
+if (!Object.keys(updates).length || updates["Name"] === "") throw appError("VALIDATION_FAILED");
 const driverRow = writeDriverRow(driverId, updates);
 return driverProfileFields(driverRow);
 }
@@ -761,7 +804,7 @@ if (adminToken) CacheService.getScriptCache().remove(adminModeKey(adminToken));
 return { ok: true };
 }
 
-// ---- Editable columns (server-side whitelist — "Admin Status" is deliberately NOT here) ----
+// Editable columns whitelist — "Admin Status" is deliberately NOT here
 const ADMIN_TEXT_COLUMNS_COMMON = {
 name: "Name", nameBn: "Bengali Name", phone: "Phone", altPhone: "Alternative Phone",
 whatsapp: "WhatsApp", vehicleType: "Vehicle Type", vehicleNumber: "Vehicle Number",
@@ -778,7 +821,7 @@ const ADMIN_MANAGED_COLUMNS = {
 status: "Status", availability: "Availability", starRating: "Star Rating", manualRating: "Manual Rating",
 personalDetails: "Personal Details", videoUrl: "Video URL"
 };
-const ADMIN_DRIVER_ONLY_MANAGED = { emergency: "Emergency Contact", doctor: "Doctor Status", sortStatus: "Sort Status" };
+const ADMIN_DRIVER_ONLY_MANAGED = { emergency: "Emergency Contact", sortStatus: "Sort Status" };
 
 function adminKindSpec(kind) {
 if (kind === "driver") {
@@ -800,7 +843,6 @@ const ADMIN_ENUMS = {
 status: ["Active", "Inactive"],
 availability: ["Active", "Inactive"],
 emergency: ["TRUE", "FALSE", ""],
-doctor: ["TRUE", "FALSE", ""],
 sortStatus: ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", ""]
 };
 

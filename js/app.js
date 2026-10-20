@@ -565,11 +565,15 @@
     window.Auth.getProfile().then(paint).catch(() => {});
   }
 
+  function hideSplash() {
+    if (window.hideSplash) window.hideSplash();
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     wireHeader();
     Lang.apply();
     if (window.Api && window.Api.preload) window.Api.preload().catch(() => {});
-    renderRoute();
+    Promise.resolve(renderRoute()).then(hideSplash, (err) => { hideSplash(); throw err; });
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js").then((reg) => {

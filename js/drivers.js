@@ -713,10 +713,12 @@
     const card = Utils.el("article", { class: "notice-card" + (n.urgent ? " notice-card--urgent" : "") }, children);
     card.appendChild(noticeRing(card));
     const bgLink = Utils.clean(n.bgImage);
-    if (bgLink) {
+    const noticeNo = opts && typeof opts.index === "number" ? String(opts.index + 1).padStart(2, "0") : "";
+    const localBg = noticeNo ? Utils.localFixtureUrl("homeNotice", noticeNo) : null;
+    if (bgLink || localBg) {
       const probe = Utils.el("img", { alt: "", class: "notice-card__probe", "aria-hidden": "true" });
       card.appendChild(probe);
-      Utils.wireImageFallback(probe, bgLink, () => {}, null, () => {
+      Utils.wireImageFallback(probe, bgLink, () => {}, localBg, () => {
         card.style.backgroundImage = `linear-gradient(rgba(10, 30, 20, 0.55), rgba(10, 30, 20, 0.55)), url("${probe.src}")`;
         card.classList.add("notice-card--has-bg");
         probe.remove();
@@ -928,13 +930,13 @@
       const list = homeNotices();
       if (!list.length) return;
       noticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container" }, [
-        Utils.el("div", { class: "notice-list" }, [homeNoticeCard(list[0])])
+        Utils.el("div", { class: "notice-list" }, [homeNoticeCard(list[0], { index: 0 })])
       ]));
       const rest = list.slice(1);
       if (!rest.length) return;
       moreNoticeZone.appendChild(Utils.el("section", { class: "section section--flush-top container home-notice-more" }, [
         Utils.el("div", { class: "home-notice-more__bar" }, [noticeHeadEl(rest, true)]),
-        Utils.el("div", { class: "notice-list" }, rest.map((n) => homeNoticeCard(n, { speaker: true })))
+        Utils.el("div", { class: "notice-list" }, rest.map((n, i) => homeNoticeCard(n, { speaker: true, index: i + 1 })))
       ]));
     }
 

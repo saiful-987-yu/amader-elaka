@@ -225,6 +225,7 @@
     if (kind === "vehicle") return "assets/local-photos/vehicles/" + slug + ".jpg";
     if (kind === "category") return "assets/local-photos/categories/" + slug + ".jpg";
     if (kind === "homeCategory") return "assets/local-photos/categories/" + slug + ".jpg";
+    if (kind === "homeNotice") return "assets/banner-images/home-notice-" + slug + ".jpg";
     if (kind === "profile") return "assets/local-photos/profilePhoto/" + encodeURIComponent(String(slug).trim()) + ".jpg";
     return null;
   };

@@ -74,6 +74,7 @@ project/
 │   ├── brand/            # logo, favicons, PWA icons (see its own README)
 │   ├── icons/            # favicon.svg, sacarmart-logo.svg
 │   ├── banner-images/    # banner pictures + banner-videos.js (see its own README)
+│   ├── screenshots/      # install-dialog screenshots listed in manifest.json (see its own README)
 │   └── local-photos/     # optional bundled photos, see §5.8
 │       ├── markets/      #   <market-slug>.jpg / <market-slug>-bg.jpg
 │       ├── vehicles/     #   <vehicle-slug>.jpg (driver vehicle categories only)
@@ -571,6 +572,29 @@ case-sensitive on GitHub Pages.
 
 The slug is the text after `/markets/` (or after the bazar name) in the page
 address. See the README inside each folder for details.
+
+---
+
+## 5.9 Install screenshots & converting to an APK
+
+- `assets/screenshots/` holds the four screenshots listed under
+  `screenshots` in `manifest.json` (three phone-shaped `narrow` ones and one
+  desktop-shaped `wide` one). Browsers and PWABuilder use them to show a
+  richer install dialog. They are only read at install time, so they are
+  deliberately **not** in the `sw.js` cache list.
+- The site and the service worker work normally even if these pictures are
+  missing; only the richer install dialog is lost and PWABuilder shows a
+  warning. If you delete them, also remove the matching entries from
+  `screenshots` in `manifest.json`. You may compress them freely as long as
+  the pixel size, format and file name stay the same as written in the
+  manifest. See the README inside the folder.
+- `manifest.json` also has `launch_handler` (`navigate-existing`): opening
+  the app from a link or a shortcut reuses the already-open app window
+  instead of starting a second one.
+- Converting to an APK (for example with PWABuilder): the site is served from
+  a sub-folder (`.../amader-elaka/`), while Android's Digital Asset Links file
+  (`.well-known/assetlinks.json`) must sit at the **root** of the domain. Without
+  it the APK still works but shows the browser address bar at the top.
 
 ---
 

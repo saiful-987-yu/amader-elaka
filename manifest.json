@@ -40,6 +40,9 @@
   "theme_color": "#1F6E4A",
   "lang": "en",
   "dir": "ltr",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "assets/brand/pwa-icon-192.png",

@@ -30,6 +30,8 @@ website picks them up automatically, no code changes needed:
 | `global-banner-02.jpg` | GLOBAL banner, slide 2 — shown if the `.gif` is missing |
 | `global-banner-03.jpg` | GLOBAL banner, slide 3 — shown on any page whose own slide-3 picture is missing (and its video can't play) |
 
+| `home-notice-01.jpg`, `home-notice-02.jpg`, `home-notice-03.jpg` ... | Background picture of the Home page notices (number = the notice's position, in the order written in `assets/home-content/home-content.js`; add more numbers as notices grow). Looked for FIRST; if missing, that notice's Google Drive `bgImage` link is used. 2:1 JPG recommended |
+
 | `home-registration-banner.jpg` | Background image of the "Register as a Driver" section |
 | `register-photo-upload-bg.jpg` | Background of the top "Upload your profile photo" button on Registration Step 3 (a soft-green overlay sits on top so the text stays readable; if missing, the plain soft-green color is shown) |
 

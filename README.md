@@ -121,7 +121,7 @@ automatically by the backend when first needed — see below:
 | `Users` | Approved, publicly visible drivers (and doctors) — also where each user's own Username/Password live |
 | `Pending Users` | New registrations awaiting review (approved from Admin Mode, or manually in the sheet) |
 | `Markets` | The list of bazars |
-| `Vehicle Categories` | CNG / Auto / Van / Other, etc. (and the categories of the Other Section) |
+| `All Categories` | CNG / Auto / Van / Other, etc. (and the categories of the Other Section) |
 
 ### 3.2 Column headers
 
@@ -132,14 +132,14 @@ automatically by the backend when first needed — see below:
 - `Markets Image URL` — an optional photo shown next to the bazar's icon on the homepage's market cards (same idea as the Vehicle Categories image below). Leave it empty and the card just shows its icon as before, no broken image.
 - `Markets BG Image URL` — an optional large background photo for the whole market card (separate from the small icon/image above, which stays visible either way). Leave it empty and the card keeps its existing plain background (white in Light Mode, dark in Dark Mode); if the URL doesn't load, the same plain background is used — never a broken image. A photo placed in `assets/local-photos/markets/` is tried before either URL (see §5.8).
 
-**Vehicle Categories**
+**All Categories**
 `Category ID | English Name | Bengali Name | Icon | Status | Sort Order | Vehicle Categories Image URL | Other Categories`
 
 - `Vehicle Categories Image URL` — a category artwork image shown next to the existing small icon on the vehicle-type selection screen (roughly 2:1, wider than tall). This is completely separate from a driver's own `Vehicle Image URL` in the Users tab — leave it empty and the category card just shows its icon as before, no broken image. A photo placed in `assets/local-photos/vehicles/` is tried first (see §5.8).
 - `Other Categories` — `TRUE` (case-insensitive) moves the category out of the normal Bazar → Vehicle flow and into the **Other Section** (see §3.6). `FALSE` or blank keeps it a normal vehicle category. The two groups never overlap: a category marked `TRUE` is not offered under any bazar.
 
 **Users**
-`Driver ID | Name | Bengali Name | Father/Husband Name | Phone | Alternative Phone | Village | Post Office | Union | Upazila | District | Full Address | Vehicle Type | Vehicle Number | Bazar | Service Area | Driving Experience | Driver Image URL | Vehicle Image URL | Social Media URL | Username | Password | Status | Availability | Created Date | Updated Date | Star Rating | WhatsApp | Emergency Contact | Doctor Status | Sort Status | Personal Details | Video URL | Manual Rating | Public Rating Cache | Public Rating Count | Admin Status`
+`Driver ID | Name | Bengali Name | Father/Husband Name | Phone | Alternative Phone | Village | Post Office | Union | Upazila | District | Full Address | Vehicle Type | Vehicle Number | Bazar | Service Area | Driving Experience | Driver Image URL | Vehicle Image URL | Social Media URL | Username | Password | Status | Availability | Created Date | Updated Date | Star Rating | WhatsApp | Emergency Contact | Sort Status | Personal Details | Video URL | Manual Rating | Public Rating Cache | Public Rating Count | Admin Status`
 
 - `Social Media URL` — optional. One or more links (Facebook, YouTube, TikTok, Google Maps, a website, etc.) separated by a new line or `, `; shown as icon buttons on the driver/doctor detail page. Leave it empty and nothing is shown.
 - `Admin Status` — `TRUE` gives that driver access to Admin Mode (after logging in and re-entering their password). It can only be set here, directly in the sheet — it can never be changed from the website. Leave it empty or `FALSE` for every normal driver.
@@ -151,7 +151,7 @@ automatically by the backend when first needed — see below:
 - `WhatsApp` — controls the WhatsApp button on the driver card/profile: `F` uses the main `Phone`, `A` uses `Alternative Phone`, a real phone number is used directly, `N` or empty hides the button.
 - `Bazar`, `Vehicle Type`, and `Vehicle Image URL` all support **multiple values** in one cell, separated by `, ` (comma + space) — e.g. `Nobi Bazar, Bangla Bazar` or `Motorcycle, CNG, Auto` or `image1.jpg, image2.jpg, image3.jpg`. A driver with multiple bazars/vehicle types shows up under every one of them; multiple vehicle images become a clickable thumbnail gallery on the driver detail screen. A single plain value (no comma) still works exactly as before.
 - `Bazar` must match a `Market Name English` value from the Markets tab (matched by a lowercased, hyphenated "slug" of the name — e.g. "Nobi Bazar" → `nobi-bazar`).
-- `Vehicle Type` must similarly match an `English Name` from Vehicle Categories.
+- `Vehicle Type` must similarly match an `English Name` from the `All Categories` tab.
 - For a profile in the Other Section, set `Vehicle Type` to a category that has `Other Categories = TRUE`; it then appears in the Other Section list of that category (see §3.6).
 - `Status` = `Active` to make the driver eligible to appear publicly at all.
 - `Availability` = `Active` or `Inactive` — this is the flag the driver controls from their own profile.
@@ -180,11 +180,14 @@ Column headers ahead of time if you prefer.
 A logged-in driver's own "My Profile" page (Change Password + a
 "Edit Profile" action) writes back to their SAME row on `Users` —
 still no separate account sheet. Only a small, fixed set of columns are
-ever editable this way: `Bengali Name`, `Father/Husband Name`,
-`Alternative Phone`, `WhatsApp`, `Service Area`, `Vehicle Number`, and
+ever editable this way: `Name`, `Bengali Name`, `Father/Husband Name`,
+`Alternative Phone`, `WhatsApp`, `Village`, `Post Office`, `Union`,
+`Upazila`, `District`, `Full Address`, `Service Area`, `Vehicle Number`,
+`Driving Experience`, `Qualification`, `Extra 1`–`Extra 4`, and
 `Password` (via Change Password, after the current password is
-verified). Everything else shown on the profile — `Name`, `Phone`,
-`Username`, `Vehicle Type`, `Bazar`, `Driving Experience`, both photo
+verified). `Name` and `Bengali Name` are required in the edit form, as they
+are at registration; an empty name is never saved. Everything else shown on
+the profile — `Phone`, `Username`, `Vehicle Type`, `Bazar`, both photo
 URLs, `Status`, and `Availability` (which has its own dedicated
 toggle) — stays read-only there by design; see `updateProfile()` /
 `changePassword()` in `Code.gs`. As with Availability, the row to
@@ -250,7 +253,8 @@ needed. Passwords are never written here — only "hidden" → "changed".
 
 The backend also auto-creates a `Sessions` tab the first time someone logs
 in — you don't need to create it yourself, and you never need to look at
-it (it just tracks per-token login expiry).
+it (it just tracks per-token login expiry, in the same `dd-MM-yy HH:mm`
+style as the other dates).
 
 ### 3.2.1 Admin Mode
 
@@ -313,19 +317,17 @@ in `config.js`.** The Apps Script Web App URL is the only thing that
 belongs there, and it is meant to be public — the actual spreadsheet access
 happens inside your Apps Script project under your own Google account.
 
-### 3.5 Doctors (the `Doctor Status` column)
+### 3.5 Doctors (the `Doctor` category)
 
 There is no separate `Doctors` tab. Doctors are normal rows on the `Users`
 tab, with every column and feature of a driver (login, admin edit, ratings,
-photos, etc.). The `Doctor Status` column on the `Users` tab decides
-whether a profile appears in "Find a Doctor":
+photos, etc.). A profile appears in "Find a Doctor" when its `Vehicle Type`
+contains `doctor` (the English Name of a category row in `All Categories`).
+The old `Doctor Status` column is no longer read by the backend and can be
+deleted from the `Users` tab.
 
-- `TRUE` (case-insensitive) adds the profile to the Doctor section.
-- `FALSE` or blank keeps it out of the Doctor section.
-
-It works exactly like `Emergency Contact`, and it never affects the
-profile's normal listing under its own bazar/vehicle type. The Doctor list
-is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
+The Doctor list is ordered by the same `Sort Status` → `Star Rating` rule as
+the other lists.
 
 ### 3.6 Other Section, Emergency Contact list and Doctor list
 
@@ -334,14 +336,14 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   (`#/other/<category-slug>`) with the same search box, "available only"
   filter, cards, call/WhatsApp buttons and detail view as a normal list.
   A category is shown here only if its `Other Categories` cell on the
-  `Vehicle Categories` tab is `TRUE` **and** at least one approved profile
+  `All Categories` tab is `TRUE` **and** at least one approved profile
   has that `Vehicle Type`. The bazar does not matter. Adding a new
-  category = one new row in `Vehicle Categories`; no code change.
+  category = one new row in `All Categories`; no code change.
 - **Emergency Contact** (`#/emergency`): every profile with
   `Emergency Contact = TRUE` (see §3.2) whose `Bazar` includes the chosen
   bazar.
-- **Find a Doctor** (`#/doctor`): every profile with `Doctor Status = TRUE`
-  (see §3.5).
+- **Find a Doctor** (`#/doctor`): every profile whose `Vehicle Type`
+  contains `doctor` (see §3.5).
 - All lists use the same order: offline profiles last, then `Sort Status`,
   then `Star Rating`.
 - **Card info line:** vehicle-type lists (CNG, Auto, ...) show the category
@@ -395,7 +397,7 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   on the home page.
 - The top-menu "Drivers" link goes straight to the chosen bazar's vehicle types.
 - To add a category such as Shop, add a row in the category sheet
-  (`Vehicle Categories`, or `All Categories`) with `Other Categories` = TRUE.
+  (`All Categories`) with `Other Categories` = TRUE.
   English Names used by the home cards: `Shop`, `Mosque & Madrasa`,
   `Notable People`, `Sports`, `School & College`.
 
@@ -403,8 +405,7 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 
 - A listing is a doctor when its category (the `Vehicle Type` / `Category`
   column) contains `Doctor`; add a category row with English Name `Doctor`.
-  The older `Doctor Status` column still works. Doctors' degree/specialty goes
-  in the `Qualification` column. The `Doctor` category never appears in the
+  Doctors' degree/specialty goes in the `Qualification` column. The `Doctor` category never appears in the
   vehicle chooser or the Other Section.
 - Extra columns in `Users` and `Pending Users`: `Qualification`, `Extra 1`,
   `Extra 2`, `Extra 3`, `Extra 4`. (For a map link or a longer description use the
@@ -412,8 +413,8 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 - `Extra 1` to `Extra 4` hold category-specific details. Their labels are set per
   category in `CATEGORY_EXTRA_FIELDS` (`assets/home-content/home-content.js`),
   for example date, venue, organizer and result for `sports`.
-- The backend accepts both old and new names. Sheet tab: `Vehicle Categories`
-  or `All Categories`. Columns: `Driver ID`/`Profile ID`, `Vehicle Type`/`Category`,
+- The backend accepts both old and new column names. Sheet tab: `All Categories`.
+  Columns: `Driver ID`/`Profile ID`, `Vehicle Type`/`Category`,
   `Vehicle Number`/`Reference Number`, `Driver Image URL`/`Profile Image URL`,
   `Vehicle Image URL`/`Gallery Image URL`, `Driving Experience`/`Experience`,
   `Vehicle Categories Image URL`/`Category Image URL`.
@@ -428,13 +429,13 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   appears on the homepage automatically — no code changes. If there are
   more than 4 active bazars, the homepage shows the first 3 (by `Sort
   Order`) plus an "Others" tile that reveals the rest in place.
-- **Add a new vehicle category:** add a row to `Vehicle Categories` the
+- **Add a new vehicle category:** add a row to `All Categories` the
   same way. The same "first 3 + Others" rule applies, and a category only
   shows for a given bazar if at least one approved driver in that bazar
   actually has that vehicle type — an active-but-empty category for that
   bazar stays hidden there (it can still show normally in a bazar that
   does have a driver for it).
-- **Add a service to the Other Section:** add a `Vehicle Categories` row with `Other Categories = TRUE`, then give profiles that `Vehicle Type` (see §3.6).
+- **Add a service to the Other Section:** add an `All Categories` row with `Other Categories = TRUE`, then give profiles that `Vehicle Type` (see §3.6).
 - **Approve a driver:** use **Pending Users** → **OK** in the Admin
   Dashboard, or move their whole row from `Pending Users` to
   `Users` (see §3.2) — their `Username`/`Password` come along with it,
@@ -450,7 +451,24 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
 ## 5. Driver login & availability
 
 - Only drivers need an account — customers never log in.
-- Login uses **Username or Mobile Number + Password**.
+- Login uses **Username or Mobile Number + Password**. The login form checks the
+  boxes before sending (empty username, empty password, password shorter than 6
+  characters) and tells the driver which one is wrong; while logging in it shows
+  a spinner and a slim progress bar (and a "server is taking a little longer"
+  note after about 3.5 seconds).
+- **Forgot password:** the link under the Login button opens a panel that tells
+  the driver to message or call the admin. The WhatsApp message is pre-filled with
+  the username/mobile typed in the form. The numbers come from `call` and
+  `whatsapp` in `SOCIAL_LINKS` in `config/config.js`. The admin sets a new password
+  from Admin Mode; the driver can then change it from their profile. There is no
+  self-service reset on purpose: names and numbers are public, so they cannot
+  prove who someone is.
+- A login lasts 30 days (`SESSION_TTL_MS` in `Code.gs`). Each time the app is used
+  the 30 days start again from that day (renewed at most once a day,
+  `SESSION_RENEW_AFTER_MS`), so a login only expires after 30 days without use.
+  When the server says the session has expired, the app now clears the old login
+  and opens the login page, so the driver or admin logs in once instead of
+  logging out first.
 - After login, a driver can only see and edit **their own** profile: the
   backend identifies the driver strictly from their session token, never
   from any ID the browser sends, so one driver can never modify another's

@@ -86,8 +86,43 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="stylesheet" href="css/pwa.css" />
+  <style>
+    #app-splash { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--color-bg, #F3F5EF); color: var(--color-primary, #1F6E4A); pointer-events: none; opacity: 0; animation: splashIn 0.25s ease 0.5s forwards; }
+    #app-splash__logo { width: 84px; height: 84px; border-radius: 50%; object-fit: contain; animation: splashLogo 0.5s ease 0.5s backwards; }
+    #app-splash__name { text-align: center; line-height: 1.25; animation: splashName 0.5s ease 0.7s backwards; }
+    #app-splash__name strong { display: block; font-family: "Hind Siliguri", system-ui, sans-serif; font-size: 1.5rem; font-weight: 700; }
+    #app-splash__name span { display: block; font-size: 0.9rem; opacity: 0.75; }
+    @keyframes splashIn { to { opacity: 1; } }
+    @keyframes splashLogo { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    @keyframes splashName { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      #app-splash__logo, #app-splash__name { animation: none; }
+    }
+  </style>
 </head>
 <body>
+  <div id="app-splash" aria-hidden="true">
+    <img id="app-splash__logo" src="assets/brand/logo-low.png" alt="" width="84" height="84" decoding="async" />
+    <div id="app-splash__name"><strong>আমাদের এলাকা</strong><span>Amader Elaka</span></div>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById("app-splash");
+      function drop() { if (el && el.parentNode) el.parentNode.removeChild(el); el = null; }
+      window.hideSplash = function () {
+        if (!el) return;
+        var shown = parseFloat(window.getComputedStyle(el).opacity) || 0;
+        if (shown < 0.05) { drop(); return; }
+        el.style.animation = "none";
+        el.style.opacity = String(shown);
+        void el.offsetWidth;
+        el.style.transition = "opacity 0.25s ease";
+        el.style.opacity = "0";
+        setTimeout(drop, 300);
+      };
+      setTimeout(window.hideSplash, 8000);
+    })();
+  </script>
   <a class="skip-link" href="#app" data-i18n="a11y.skipToContent">Skip to content</a>
 
   <header class="site-header">

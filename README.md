@@ -370,12 +370,16 @@ is ordered by the same `Sort Status` → `Star Rating` rule as the other lists.
   Notices and category cards are edited in `assets/home-content/home-content.js`
   (no backend work). A card for an Other category shows "Coming soon" until at
   least one approved profile exists for it in the chosen bazar.
-- Each home notice can have its own background picture: put a Google Drive
-  photo link in that notice's `bgImage` line in `home-content.js` (the Drive file
-  must be shared as "Anyone with the link"; empty = no picture). A dark layer is
+- Each home notice can have its own background picture. The site first looks in
+  `assets/banner-images/` for `home-notice-01.jpg`, `home-notice-02.jpg`,
+  `home-notice-03.jpg` ... (the number is the notice's position on the home
+  page, in the order written in `home-content.js`: notice 1 = `01`, notice 2 = `02`,
+  and so on; add more numbers as notices grow). If that file is not there, it uses
+  the Google Drive photo link in the notice's `bgImage` line (the Drive file must be
+  shared as "Anyone with the link"; empty = no picture). A dark layer is
   added automatically so the white text stays readable. Pictures load in the
-  background and never delay the text; once loaded they are kept in the
-  browser's photo cache. There is no local folder for notice pictures.
+  background and never delay the text; Drive pictures are kept in the
+  browser's photo cache. Recommended: JPG, roughly 2:1, compressed.
 - A home notice's `link` can be a normal web address (opens in a new tab) or
   `#/driver/<Driver ID>` (e.g. `#/driver/D1264`): the profile card then opens
   over the page you are on, without reloading the app, and the Back button
@@ -547,6 +551,14 @@ in the browser's `localStorage` (not just in memory), so:
   intercepted.
 - When a new version of the site is deployed, the visitor sees a "new
   version is ready" banner with a refresh button.
+- **Opening animation:** while the app is still starting, a small splash (logo, with
+  the app name sliding up from below) is shown. It appears only if opening takes
+  longer than 0.5 second; if the app opens faster, nothing is shown. It is plain
+  CSS in `index.html` (id `app-splash`) and is removed by `hideSplash()` once the
+  first screen is drawn (with an 8-second safety limit). It uses the existing
+  `assets/brand/logo-low.png`, so no extra file is downloaded. To remove it, delete
+  the `app-splash` block and its `<style>` in `index.html`, and the `hideSplash`
+  lines in `js/app.js`.
 - **Cache version:** `CACHE_VERSION` at the top of `sw.js` (currently `v6`)
   decides when visitors' old cached files are replaced. Change it only when
   you deliberately want every visitor to download the new app files; adding

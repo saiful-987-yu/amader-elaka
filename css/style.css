@@ -1214,6 +1214,49 @@ a:hover { text-decoration: underline; }
   justify-content: center;
 }
 
+/* Driver login page */
+.login-head .login-badge { width: 72px; height: 72px; margin: 0 auto var(--space-3); border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 6px 18px rgba(31, 110, 74, 0.18); }
+.login-head .login-badge img { width: 100%; height: 100%; object-fit: contain; }
+.login-head .login-badge svg { width: 34px; height: 34px; }
+.login-card { position: relative; max-width: 420px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 27, 20, 0.08); }
+.login-card::before { content: ""; position: absolute; left: 0; top: 0; height: 3px; width: 40%; background: var(--color-primary); border-radius: 3px; opacity: 0; }
+.login-card.is-loading::before { opacity: 1; animation: login-bar 1.1s ease-in-out infinite; }
+@keyframes login-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+.login-input { position: relative; }
+.login-input__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; color: var(--color-ink-soft); pointer-events: none; }
+.login-input__icon svg { width: 20px; height: 20px; }
+.login-card .field input[type="text"], .login-card .field input[type="password"] { padding-left: 42px; }
+.login-card .field input[type="password"] { padding-right: 44px; }
+.login-card .field input:focus { box-shadow: 0 0 0 3px var(--color-primary-soft); outline: none; }
+.login-card .field.has-error input { box-shadow: 0 0 0 3px var(--color-danger-soft); }
+.login-eye { position: absolute; right: 6px; top: 6px; bottom: 6px; width: 36px; border: none; background: transparent; color: var(--color-ink-soft); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.login-alert { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); margin-bottom: var(--space-4); border-radius: var(--radius-sm); background: var(--color-danger-soft); color: var(--color-danger); font-size: var(--font-size-sm); }
+.login-alert[hidden] { display: none; }
+.login-alert--info { background: var(--color-primary-soft); color: var(--color-primary); }
+.login-alert__icon { display: flex; flex-shrink: 0; }
+.login-alert__icon svg { width: 20px; height: 20px; }
+.login-submit { gap: var(--space-2); }
+.login-spinner { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: admin-spin 0.7s linear infinite; }
+.login-slow { margin: var(--space-3) 0 0; text-align: center; font-size: var(--font-size-xs); color: var(--color-ink-soft); }
+.login-slow[hidden] { display: none; }
+.login-forgot__row { text-align: center; margin-top: var(--space-4); }
+.login-forgot__link { background: none; border: none; padding: var(--space-1) var(--space-2); color: var(--color-primary); font: inherit; font-size: var(--font-size-sm); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.login-forgot { margin-top: var(--space-3); padding: var(--space-4); border-radius: var(--radius-md); background: var(--color-primary-soft); animation: login-pop 0.25s ease; }
+.login-forgot[hidden] { display: none; }
+.login-forgot__title { margin: 0 0 var(--space-2); font-size: var(--font-size-md); }
+.login-forgot__text { margin: 0 0 var(--space-3); font-size: var(--font-size-sm); color: var(--color-ink-soft); }
+.login-forgot__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.login-forgot__btn { flex: 1 1 100%; text-decoration: none; }
+.login-forgot__btn svg { width: 18px; height: 18px; }
+@keyframes login-pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .login-card--shake { animation: login-shake 0.35s ease; }
+}
+@keyframes login-shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .login-card.is-loading::before { animation: none; width: 100%; }
+}
+
 /* Multi-select vehicle type / preferred bazar — pill-style checkboxes,
    easy to tap on mobile. Kept to a single compact horizontally-
    scrolling row instead of wrapping into several rows, so a long list

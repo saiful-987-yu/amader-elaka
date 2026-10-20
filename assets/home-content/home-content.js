@@ -9,7 +9,9 @@
     urgent (true = red highlight), link (optional web address; adds a "Read more" button.
     Write "#/driver/<Driver ID>" to open that driver/doctor profile inside the app, on the same page, without reloading),
     bgImage (optional Google Drive photo link used as that notice's own background picture; the Drive file must be
-    shared as "Anyone with the link" - leave "" for no picture).
+    shared as "Anyone with the link" - leave "" for no picture). A picture file in assets/banner-images/ named
+    home-notice-01.jpg, home-notice-02.jpg ... (notice 1, notice 2 ... in the order written here) is used first;
+    bgImage is used only when that file is not there.
 
   CATEGORIES
   - type "drivers"   -> opens the driver flow of the chosen bazar

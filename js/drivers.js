@@ -117,7 +117,12 @@
 
   function formatMultiUpper(raw) {
     const parts = Utils.splitMulti(raw);
-    return parts.length ? parts.map((s) => s.toUpperCase()).join(", ") : "—";
+    if (!parts.length) return "—";
+    const bnMap = {};
+    if (Lang.current() === "bn") {
+      (Api.peekVehicleCategories() || []).forEach((c) => { if (c.nameBn) bnMap[c.slug] = c.nameBn; });
+    }
+    return parts.map((s) => bnMap[s] || s.toUpperCase()).join(", ");
   }
 
   function isVehicleDriver(driver) {
@@ -138,15 +143,17 @@
 
   function vehicleServiceLine(driver, vehicleLabel, categoryMode) {
     const label = cardCategoryText(driver, vehicleLabel, categoryMode);
-    const text = label && driver.serviceArea ? label + " · " + driver.serviceArea : (label || driver.serviceArea || "");
+    const area = Utils.localizedField(driver, "serviceArea");
+    const text = label && area ? label + " · " + area : (label || area || "");
     if (!text) return null;
     return Utils.el("div", { class: "driver-card__meta", title: text, text });
   }
 
   function experienceRatingRow(driver) {
     const parts = [];
-    if (driver.experience) {
-      parts.push(Utils.el("span", { class: "driver-card__experience", text: Utils.formatExperience(driver.experience) }));
+    const experience = Utils.localizedField(driver, "experience");
+    if (experience) {
+      parts.push(Utils.el("span", { class: "driver-card__experience", text: Utils.formatExperience(experience) }));
       parts.push(Utils.el("span", { class: "dot-sep", "aria-hidden": "true", text: "·" }));
     }
     parts.push(starsNode(driver.rating));
@@ -283,7 +290,12 @@
     ]);
 
     const savedTopReviews = Api.peekPublicRatings(driver.driverId);
-    const listContainer = Utils.el("div", { class: "reviews-list" }, [ViewHelpers.loadingBlock()]);
+    const listContainer = Utils.el("div", { class: "reviews-list" }, [
+      Utils.el("div", { class: "reviews-loading", role: "status", "aria-label": Lang.t("loading.generic") }, [
+        Utils.el("div", { class: "reviews-loading__row" }),
+        Utils.el("div", { class: "reviews-loading__row" })
+      ])
+    ]);
     if (savedTopReviews && savedTopReviews.length) renderReviewList(listContainer, savedTopReviews);
     const expandedContainer = Utils.el("div", { class: "reviews-list reviews-list--expanded" });
     expandedContainer.style.display = "none";
@@ -397,10 +409,30 @@
     ]);
   }
 
+  function favoriteButton(id) {
+    const btn = Utils.el("button", { type: "button", class: "fav-btn", html: Icons.heart });
+    function paint() {
+      const on = window.Favorites.has(id);
+      const label = Lang.t(on ? "favorites.remove" : "favorites.add");
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.setAttribute("aria-label", label);
+      btn.setAttribute("title", label);
+    }
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.Favorites.toggle(id);
+      paint();
+    });
+    paint();
+    return btn;
+  }
+
   function homeifyDriverRoute() {
     const apply = () => {
-      if (!/^#\/driver\//.test(window.location.hash)) return true;
+      if (!/^#\/(?:driver|user)\//.test(window.location.hash)) return true;
       if (history.state && history.state.nobiModal) return false;
+      if (window.BackGuard && window.BackGuard.leaveDeepEntry()) return true;
       history.replaceState(history.state, "", "#/");
       return true;
     };
@@ -413,7 +445,72 @@
     setTimeout(() => window.removeEventListener("popstate", onPop), 2000);
   }
 
-  function openDriverDetail(driver, crumbTrail, returnTo, stackNew, fromRoute) {
+  function isPinLockedDriver(driver) {
+    return /^dx\d/i.test(Utils.clean(driver && driver.driverId));
+  }
+
+  function todaysDetailPin() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return pad(d.getDate()) + pad(d.getMonth() + 1) + String(d.getFullYear()).slice(-2);
+  }
+
+  function openPinGate(onUnlock, onCancel) {
+    const stale = document.querySelector(".pin-gate");
+    if (stale) stale.remove();
+    const input = Utils.el("input", {
+      type: "text", inputmode: "numeric", autocomplete: "off",
+      placeholder: Lang.t("register.step3.pinLabel"), "aria-label": Lang.t("register.step3.pinLabel")
+    });
+    const errorMsg = Utils.el("div", { class: "error-msg", role: "alert" });
+    const field = Utils.el("div", { class: "field" }, [input, errorMsg]);
+    let overlay = null;
+    function close() {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", close);
+      window.removeEventListener("hashchange", close);
+      if (overlay) { overlay.remove(); overlay = null; }
+    }
+    function cancel() { close(); if (onCancel) onCancel(); }
+    function submit() {
+      if (Utils.clean(input.value) === todaysDetailPin()) {
+        close();
+        onUnlock();
+        return;
+      }
+      field.classList.add("has-error");
+      errorMsg.textContent = Lang.t("validation.pinInvalid");
+      input.select();
+    }
+    function onKey(e) {
+      if (e.key === "Escape") cancel();
+      else if (e.key === "Enter") { e.preventDefault(); submit(); }
+    }
+    input.addEventListener("input", () => field.classList.remove("has-error"));
+    const box = Utils.el("div", { class: "pin-gate__box", role: "dialog", "aria-modal": "true" }, [
+      field,
+      Utils.el("div", { class: "pin-gate__actions" }, [
+        Utils.el("button", { type: "button", class: "btn btn--ghost", text: Lang.t("action.cancel"), onClick: cancel }),
+        Utils.el("button", { type: "button", class: "btn btn--primary", text: Lang.t("action.confirm"), onClick: submit })
+      ])
+    ]);
+    overlay = Utils.el("div", { class: "pin-gate", role: "presentation" }, [box]);
+    overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) cancel(); });
+    document.body.appendChild(overlay);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("popstate", close);
+    window.addEventListener("hashchange", close);
+    setTimeout(() => input.focus(), 0);
+  }
+
+  function openDriverDetail(driver, crumbTrail, returnTo, stackNew, fromRoute, unlocked) {
+    if (!unlocked && isPinLockedDriver(driver)) {
+      openPinGate(
+        () => openDriverDetail(driver, crumbTrail, returnTo, stackNew, fromRoute, true),
+        () => { if (fromRoute) homeifyDriverRoute(); }
+      );
+      return;
+    }
     const ctx = { driver: driver, crumbTrail: crumbTrail, returnTo: returnTo || null, fromRoute: !!fromRoute };
     currentDetail = ctx;
     const children = [];
@@ -431,6 +528,7 @@
     const nameRowChildren = [nameNode];
     let detailShareBtn = null;
     if (Utils.clean(driver.driverId)) {
+      nameRowChildren.unshift(favoriteButton(driver.driverId));
       detailShareBtn = ViewHelpers.shareButton(
         () => ViewHelpers.driverShareUrl(driver.driverId),
         () => Utils.driverDisplayName(driver)
@@ -455,20 +553,22 @@
         Lang.t("detail.regNumber"), driver.vehicleNumber || "—"
       ));
 
-    if (driver.serviceArea) {
+    const detailArea = Utils.localizedField(driver, "serviceArea");
+    if (detailArea) {
       children.push(Utils.el("div", { class: "detail-row" }, [
         Utils.el("div", { class: "detail-col detail-col--full" }, [
           Utils.el("div", { class: "detail-col__label", text: Lang.t("driver.serviceArea") }),
-          Utils.el("div", { class: "detail-col__value detail-col__value--truncate", title: driver.serviceArea, text: driver.serviceArea })
+          Utils.el("div", { class: "detail-col__value detail-col__value--truncate", title: detailArea, text: detailArea })
         ])
       ]));
     }
 
     const expRatingCols = [];
-    if (driver.experience) {
+    const detailExperience = Utils.localizedField(driver, "experience");
+    if (detailExperience) {
       expRatingCols.push(Utils.el("div", { class: "detail-col" }, [
         Utils.el("div", { class: "detail-col__label", text: Lang.t("detail.experience") }),
-        Utils.el("div", { class: "detail-col__value", text: Utils.formatExperience(driver.experience) })
+        Utils.el("div", { class: "detail-col__value", text: Utils.formatExperience(detailExperience) })
       ]));
     }
     expRatingCols.push(Utils.el("div", { class: "detail-col" }, [
@@ -543,16 +643,24 @@
       children.push(twoColRow(a[0], a[1], b[0], b[1]));
     }
 
-    if (Utils.clean(driver.personalDetails)) {
+    const detailPersonal = Utils.localizedField(driver, "personalDetails");
+    if (Utils.clean(detailPersonal)) {
       children.push(Utils.el("div", { class: "personal-details-section mt-5" }, [
         Utils.el("h3", { class: "detail-section-title", text: Lang.t("detail.personalDetails") }),
-        Utils.el("div", { class: "personal-details", html: Utils.safeHtml(driver.personalDetails) })
+        Utils.el("div", { class: "personal-details", html: Utils.safeHtml(detailPersonal) })
       ]));
     }
 
     children.push(buildRatingSection(driver));
     const socialSection = Utils.buildSocialLinksSection(driver.socialUrl);
-    if (socialSection) children.push(socialSection);
+    if (socialSection) {
+      children.push(Utils.el("div", { class: "social-links-head" }, [
+        Utils.el("span", { class: "social-links-head__line", "aria-hidden": "true" }),
+        Utils.el("span", { class: "social-links-head__text", text: Lang.t("detail.socialHeading") }),
+        Utils.el("span", { class: "social-links-head__line", "aria-hidden": "true" })
+      ]));
+      children.push(socialSection);
+    }
 
     const videoSection = Utils.buildVideoSection(driver.videoUrl, Lang.t("detail.video"));
     if (videoSection) { videoSection.classList.add("mt-5"); children.push(videoSection); }
@@ -565,7 +673,7 @@
         if (currentDetail === ctx) currentDetail = null;
         if (Modal.isReplacing || Modal.isLeaving) return;
         if (ctx.fromRoute) homeifyDriverRoute();
-        if (ctx.returnTo) openDriverDetail(ctx.returnTo.driver, ctx.returnTo.crumbTrail, ctx.returnTo.returnTo, false, ctx.returnTo.fromRoute);
+        if (ctx.returnTo) openDriverDetail(ctx.returnTo.driver, ctx.returnTo.crumbTrail, ctx.returnTo.returnTo, false, ctx.returnTo.fromRoute, true);
       }
     });
     if (detailShareBtn) {
@@ -602,7 +710,7 @@
     const link = e.target && e.target.closest ? e.target.closest("a[data-internal]") : null;
     if (!link) return;
     const href = String(link.getAttribute("href") || "");
-    const m = href.match(/^#\/driver\/([^\/?#]+)$/);
+    const m = href.match(/^#\/(?:driver|user)\/([^\/?#]+)$/);
     if (!m) return;
     e.preventDefault();
     if (!currentDetail) { window.location.hash = href; return; }
@@ -613,6 +721,8 @@
   });
 
   const SELECTED_MARKET_KEY = "area.selectedMarket";
+  const AUTO_MARKET_KEY = "area.marketAuto";
+  const AUTO_MARKET_MS = 30000;
 
   function storedMarketSlug() {
     const v = Utils.storage.get(SELECTED_MARKET_KEY, null);
@@ -650,6 +760,117 @@
     return Lang.current() === "bn" ? (b || a) : (a || b);
   }
 
+  function timerRegex() {
+    return /\[\[\s*timer\s*:\s*(\d{4})-(\d{1,2})-(\d{1,2})[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*\]\]/gi;
+  }
+
+  function timerTarget(m) {
+    const p = (n) => String(n).padStart(2, "0");
+    const t = new Date(`${m[1]}-${p(m[2])}-${p(m[3])}T${p(m[4])}:${m[5]}:${p(m[6] || 0)}+06:00`).getTime();
+    return isNaN(t) ? null : t;
+  }
+
+  function timerDigits(value, bn) {
+    const s = String(value);
+    return bn ? s.replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]) : s;
+  }
+
+  function timerTwo(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  const countdowns = new Set();
+  let countdownLoop = null;
+
+  function paintCountdown(c) {
+    const bn = Lang.current() === "bn";
+    const ms = c.target - Date.now();
+    const ended = ms <= 0;
+    const left = ended ? 0 : Math.ceil(ms / 1000);
+    const days = Math.floor(left / 86400);
+    const h = Math.floor((left % 86400) / 3600);
+    const m = Math.floor((left % 3600) / 60);
+    const s = left % 60;
+    c.dayEl.textContent = days > 0 ? timerDigits(days, bn) + " " + (bn ? "দিন" : (days === 1 ? "day" : "days")) : "";
+    c.dayEl.hidden = days <= 0;
+    c.hmEl.textContent = timerDigits(timerTwo(h), bn) + ":" + timerDigits(timerTwo(m), bn);
+    c.secEl.textContent = ":" + timerDigits(timerTwo(s), bn);
+    c.endEl.hidden = !ended;
+    c.el.classList.toggle("is-ended", ended);
+    return ended;
+  }
+
+  function tickCountdowns() {
+    countdownLoop = null;
+    countdowns.forEach((c) => {
+      if (!c.el.isConnected) {
+        c.misses++;
+        if (c.seen || c.misses > 3) countdowns.delete(c);
+        return;
+      }
+      c.seen = true;
+      if (paintCountdown(c)) countdowns.delete(c);
+    });
+    if (countdowns.size) countdownLoop = setTimeout(tickCountdowns, 1000 - (Date.now() % 1000));
+  }
+
+  function countdownEl(target) {
+    const bn = Lang.current() === "bn";
+    const dayEl = Utils.el("span", { class: "notice-timer__day" });
+    const hmEl = Utils.el("span", { class: "notice-timer__hm" });
+    const secEl = Utils.el("span", { class: "notice-timer__sec" });
+    const endEl = Utils.el("span", { class: "notice-timer__end", text: bn ? "সময় শেষ" : "Time's up" });
+    const el = Utils.el("span", { class: "notice-timer", role: "timer", "aria-live": "off" }, [
+      dayEl,
+      Utils.el("span", { class: "notice-timer__clock" }, [hmEl, secEl]),
+      endEl
+    ]);
+    const c = { el, dayEl, hmEl, secEl, endEl, target, seen: false, misses: 0 };
+    if (!paintCountdown(c)) {
+      countdowns.add(c);
+      if (!countdownLoop) countdownLoop = setTimeout(tickCountdowns, 1000 - (Date.now() % 1000));
+    }
+    return el;
+  }
+
+  function noticeTextNodes(text) {
+    const re = timerRegex();
+    const out = [];
+    let last = 0;
+    let any = false;
+    let m;
+    while ((m = re.exec(text))) {
+      const target = timerTarget(m);
+      if (target === null) continue;
+      any = true;
+      if (m.index > last) out.push(document.createTextNode(text.slice(last, m.index)));
+      out.push(countdownEl(target));
+      last = m.index + m[0].length;
+    }
+    if (!any) return null;
+    if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+    return out;
+  }
+
+  function spokenTimers(text) {
+    const bn = Lang.current() === "bn";
+    return String(text || "").replace(timerRegex(), (full, y, mo, d, h, mi, se) => {
+      const target = timerTarget([full, y, mo, d, h, mi, se]);
+      if (target === null) return "";
+      const left = Math.max(0, Math.floor((target - Date.now()) / 1000));
+      if (!left) return bn ? "সময় শেষ" : "time is up";
+      const parts = [];
+      const days = Math.floor(left / 86400);
+      const hrs = Math.floor((left % 86400) / 3600);
+      const mins = Math.floor((left % 3600) / 60);
+      if (days) parts.push(timerDigits(days, bn) + (bn ? " দিন" : (days === 1 ? " day" : " days")));
+      if (hrs) parts.push(timerDigits(hrs, bn) + (bn ? " ঘণ্টা" : (hrs === 1 ? " hour" : " hours")));
+      if (mins) parts.push(timerDigits(mins, bn) + (bn ? " মিনিট" : (mins === 1 ? " minute" : " minutes")));
+      if (!parts.length) parts.push(timerDigits(left, bn) + (bn ? " সেকেন্ড" : " seconds"));
+      return parts.join(bn ? " " : " ");
+    });
+  }
+
   let noticeRingObserver = null;
 
   function noticeRing(host) {
@@ -673,10 +894,15 @@
     const children = [];
     if (Utils.clean(n.date)) children.push(Utils.el("div", { class: "notice-card__date", text: Utils.clean(n.date) }));
     if (title) children.push(Utils.el("h3", { class: "notice-card__title", text: title }));
-    if (text) children.push(Utils.el("p", { class: "notice-card__text", text: text }));
+    if (text) {
+      const timerNodes = noticeTextNodes(text);
+      children.push(timerNodes
+        ? Utils.el("p", { class: "notice-card__text" }, timerNodes)
+        : Utils.el("p", { class: "notice-card__text", text: text }));
+    }
     const link = Utils.clean(n.link);
     const inAppHash = Utils.siteHashLink(link);
-    const driverLink = inAppHash.match(/^#\/driver\/([^\/?#]+)$/);
+    const driverLink = inAppHash.match(/^#\/(?:driver|user)\/([^\/?#]+)$/);
     let linkEl = null;
     if (driverLink) {
       linkEl = Utils.el("a", {
@@ -701,7 +927,7 @@
         "aria-label": Lang.t("a11y.speak", { text: title || text }),
         onClick: (e) => {
           e.stopPropagation();
-          const spoken = [pickText(n.titleEn, n.titleBn), pickText(n.textEn, n.textBn)].filter(Boolean).join(". ");
+          const spoken = [pickText(n.titleEn, n.titleBn), spokenTimers(pickText(n.textEn, n.textBn))].filter(Boolean).join(". ");
           if (spoken) Utils.speak(spoken, Lang.current());
         },
         html: Icons.speaker
@@ -840,6 +1066,22 @@
     let directory = Api.peekDriverDirectory() || null;
     if (directory) lastKnownDirectory = directory;
     let pickerOpen = false;
+    let autoBazarTimer = null;
+
+    function armAutoBazar() {
+      if (autoBazarTimer || !markets || storedMarketSlug()) return;
+      autoBazarTimer = setTimeout(() => {
+        autoBazarTimer = null;
+        if (!bazarZone.isConnected || storedMarketSlug()) return;
+        const def = effectiveMarketSlug();
+        if (!def) return;
+        Utils.storage.set(SELECTED_MARKET_KEY, def);
+        Utils.storage.set(AUTO_MARKET_KEY, true);
+        pickerOpen = false;
+        paintBazar();
+        paintCategories();
+      }, AUTO_MARKET_MS);
+    }
 
     function homeNotices() {
       return (Array.isArray(window.HOME_NOTICES) ? window.HOME_NOTICES : []).filter((n) =>
@@ -848,7 +1090,7 @@
 
     function noticeSpeech(list) {
       return list.map((n) =>
-        [pickText(n.titleEn, n.titleBn), pickText(n.textEn, n.textBn)].filter(Boolean).join(". ")
+        [pickText(n.titleEn, n.titleBn), spokenTimers(pickText(n.textEn, n.textBn))].filter(Boolean).join(". ")
       ).filter(Boolean).join(". ");
     }
 
@@ -873,7 +1115,9 @@
     }
 
     function chooseMarket(slug) {
+      if (autoBazarTimer) { clearTimeout(autoBazarTimer); autoBazarTimer = null; }
       Utils.storage.set(SELECTED_MARKET_KEY, slug);
+      Utils.storage.remove(AUTO_MARKET_KEY);
       pickerOpen = false;
       paintBazar();
       paintCategories();
@@ -888,20 +1132,22 @@
       const needsChoice = !storedMarketSlug();
       const showPicker = needsChoice || pickerOpen;
       const current = markets.find((m) => m.slug === effectiveMarketSlug());
+      const nudge = !needsChoice && !pickerOpen && Utils.storage.get(AUTO_MARKET_KEY, false) === true;
 
       const noticeHead = noticeBarHead();
       if (!needsChoice && current) {
         bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar" + (noticeHead ? " home-bazar__bar--split" : "") }, [
           noticeHead,
           Utils.el("button", {
-            type: "button", class: "home-bazar__current", "aria-expanded": String(showPicker),
+            type: "button", class: "home-bazar__current" + (nudge ? " home-bazar__current--nudge" : ""), "aria-expanded": String(showPicker),
             onClick: () => { pickerOpen = !pickerOpen; paintBazar(); paintCategories(); }
           }, [
             Utils.el("span", { class: "home-bazar__pin", "aria-hidden": "true", html: Icons.map }),
             Utils.el("span", { class: "home-bazar__label", text: Lang.t("home.yourBazar") }),
             Utils.el("strong", { class: "home-bazar__name", text: marketName(current) }),
-            Utils.el("span", { class: "home-bazar__change", text: pickerOpen ? Lang.t("home.closeBazar") : Lang.t("home.changeBazar") })
-          ])
+            Utils.el("span", { class: "home-bazar__change", text: pickerOpen ? Lang.t("home.closeBazar") : Lang.t("home.changeBazar") }),
+            nudge ? Utils.el("span", { class: "home-bazar__hint", "aria-hidden": "true", text: Lang.t("home.changeBazarHint") }) : null
+          ].filter(Boolean))
         ].filter(Boolean)));
       } else if (noticeHead) {
         bazarZone.appendChild(Utils.el("div", { class: "home-bazar__bar home-bazar__bar--split" }, [noticeHead]));
@@ -922,6 +1168,7 @@
         }
         bazarZone.appendChild(picker);
       }
+      if (needsChoice) armAutoBazar();
     }
 
     function paintNotices() {
@@ -2418,6 +2665,61 @@
   Router.register("/markets", renderMarkets, ["/"]);
   Router.register("/markets/:market", renderVehicles, ["/", "/markets"]);
   Router.register("/markets/:market/:vehicle", renderDriverList, ["/", "/markets", "/markets/:market"]);
+  async function renderFavoritesList(app) {
+    app.innerHTML = "";
+    const crumb = ViewHelpers.breadcrumb([
+      { label: Lang.t("nav.home"), path: "/" },
+      { label: Lang.t("favorites.heading") }
+    ]);
+    const resultsWrap = Utils.el("div", {});
+    const section = Utils.el("section", { class: "section container" }, [
+      crumb,
+      Utils.el("div", { class: "section-head" }, [
+        speakableHeading(Lang.t("favorites.heading")),
+        Utils.el("p", { text: Lang.t("favorites.sub") })
+      ]),
+      resultsWrap
+    ]);
+    app.appendChild(section);
+
+    if (!Api.peekDriverDirectory()) resultsWrap.appendChild(ViewHelpers.loadingBlock(Lang.t("drivers.loading")));
+
+    let directory;
+    try {
+      directory = await Api.getDriverDirectory();
+    } catch (err) {
+      resultsWrap.innerHTML = "";
+      resultsWrap.appendChild(ViewHelpers.errorBlock(Lang.t("error.network"), () => renderFavoritesList(app)));
+      return;
+    }
+
+    const crumbTrail = [
+      { label: Lang.t("nav.home"), path: "/" },
+      { label: Lang.t("favorites.heading"), path: "/favorites" }
+    ];
+    function paintFavorites() {
+      const byId = {};
+      (directory || []).forEach((d) => { byId[String(d.driverId || "").trim().toLowerCase()] = d; });
+      const shown = window.Favorites.list().slice().reverse()
+        .map((id) => byId[String(id).trim().toLowerCase()])
+        .filter(Boolean);
+      resultsWrap.innerHTML = "";
+      if (!shown.length) {
+        resultsWrap.appendChild(ViewHelpers.emptyBlock({
+          message: Lang.t("empty.noFavorites"), sub: Lang.t("favorites.emptyHint"), icon: Icons.heart
+        }));
+        return;
+      }
+      resultsWrap.appendChild(Utils.el("div", { class: "driver-grid" }, shown.map((d) => driverCard(d, null, crumbTrail))));
+    }
+    paintFavorites();
+    const onChange = () => {
+      if (!resultsWrap.isConnected) { document.removeEventListener("nobi:favoriteschange", onChange); return; }
+      paintFavorites();
+    };
+    document.addEventListener("nobi:favoriteschange", onChange);
+  }
+
   async function renderSharedProfile(app, params) {
     await renderHome(app);
     let directory = Api.peekDriverDirectory();
@@ -2431,6 +2733,8 @@
   }
 
   Router.register("/driver/:id", renderSharedProfile, []);
+  Router.register("/user/:id", renderSharedProfile, []);
+  Router.register("/favorites", renderFavoritesList, ["/"]);
   Router.register("/search", renderSearch, ["/"]);
   Router.register("/emergency", renderEmergencyList, ["/"]);
   Router.register("/doctor", renderDoctorList, ["/"]);

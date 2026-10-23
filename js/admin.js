@@ -79,7 +79,7 @@
 
   const tokens = () => ({ token: Auth.getToken(), adminToken: state && state.adminToken });
 
-  let counts = { pendingUsers: 0, pendingRatings: 0 };
+  let counts = { pendingUsers: 0, pendingRatings: 0, profileEdits: 0 };
 
   function setCount(key, value) {
     counts[key] = Math.max(0, Number(value) || 0);
@@ -92,7 +92,7 @@
       const t = tokens();
       const res = await guarded(() => Api.adminPendingCounts(t.token, t.adminToken));
       if (res) {
-        counts = { pendingUsers: Math.max(0, Number(res.pendingUsers) || 0), pendingRatings: Math.max(0, Number(res.pendingRatings) || 0) };
+        counts = { pendingUsers: Math.max(0, Number(res.pendingUsers) || 0), pendingRatings: Math.max(0, Number(res.pendingRatings) || 0), profileEdits: Math.max(0, Number(res.profileEdits) || 0) };
         document.dispatchEvent(new CustomEvent("nobi:admincounts"));
       }
     } catch (err) { }
@@ -283,10 +283,13 @@
         }
         return Utils.el("button", { type: "button", class: "admin-action", onClick }, kids);
       }
+      const editsAction = action(Icons.pencil, T("User Edit Confirm", "ইউজার এডিট কনফার্ম"), () => Admin.openProfileEdits(), "profileEdits");
+      editsAction.style.gridColumn = "1 / -1";
       card.appendChild(Utils.el("div", { class: "admin-actions" }, [
         action(Icons.formPlus, T("Add User", "ইউজার যোগ"), () => Admin.openCreator()),
         action(Icons.star, T("Public Rating", "পাবলিক রেটিং"), () => Admin.openRatings(), "pendingRatings"),
-        action(Icons.checkCircle, T("Pending Users", "পেন্ডিং ইউজার"), () => Admin.openPending(), "pendingUsers")
+        action(Icons.checkCircle, T("Pending Users", "পেন্ডিং ইউজার"), () => Admin.openPending(), "pendingUsers"),
+        editsAction
       ]));
       paintBadges();
       Admin.refreshCounts();
@@ -351,7 +354,8 @@
   const RATING_FIELDS = [
     F("starRating", "Star Rating (0–5)", "স্টার রেটিং (০–৫)", "number"),
     F("manualRating", "Manual Rating (0–5)", "ম্যানুয়াল রেটিং (০–৫)", "number"),
-    F("personalDetails", "Personal Details", "ব্যক্তিগত বিবরণ", "textarea", { hint: ["Simple HTML is allowed", "সাধারণ HTML ব্যবহার করা যাবে"] })
+    F("personalDetails", "Personal Details", "ব্যক্তিগত বিবরণ", "textarea", { hint: ["Simple HTML is allowed. Tags like {{Full Address}} are replaced with the user's live data", "সাধারণ HTML ব্যবহার করা যাবে। {{Full Address}} এর মতো ট্যাগ ইউজারের বর্তমান তথ্য দিয়ে বদলে যাবে"] }),
+    F("personalDetailsBn", "Personal Details (Bangla)", "ব্যক্তিগত বিবরণ (বাংলা)", "textarea", { hint: ["Shown in Bangla mode. The same {{...}} tags work here", "বাংলা মোডে দেখাবে। এখানেও একই {{...}} ট্যাগ কাজ করবে"] })
   ];
 
   function fieldsFor(kind) {
@@ -423,7 +427,7 @@
       };
       if (!opts.length) control.appendChild(Utils.el("div", { class: "hint", text: T("List not available right now.", "তালিকা এই মুহূর্তে পাওয়া যাচ্ছে না।") }));
     } else if (def.type === "textarea") {
-      control = Utils.el("textarea", { id, name: id, rows: def.key === "personalDetails" ? "5" : "3" });
+      control = Utils.el("textarea", { id, name: id, rows: def.key === "personalDetails" || def.key === "personalDetailsBn" ? "5" : "3" });
       control.value = Utils.clean(original);
       read = () => control.value;
       changed = () => Utils.clean(control.value) !== Utils.clean(original);
@@ -519,44 +523,6 @@
     };
   }
 
-  function experienceAdapter(field, original) {
-    const orig = Utils.clean(original);
-    const numberInput = field.wrap.querySelector("#experienceValue");
-    const unitSelect = field.wrap.querySelector("#experienceUnit");
-    let parsed = !orig;
-    const fromMatch = orig.match(/^from\s+(\d{4})$/i);
-    const spanMatch = orig.match(/^(\d+(?:\.\d+)?)\s*(years?|months?)$/i);
-    if (fromMatch) { numberInput.value = fromMatch[1]; unitSelect.value = "from"; parsed = true; }
-    else if (spanMatch) { numberInput.value = spanMatch[1]; unitSelect.value = /^month/i.test(spanMatch[2]) ? "months" : "years"; parsed = true; }
-    unitSelect.dispatchEvent(new Event("change"));
-    if (!parsed) field.wrap.appendChild(Utils.el("div", { class: "hint", text: T("Current value: ", "বর্তমান মান: ") + orig }));
-    let touched = false;
-    const mark = () => { touched = true; };
-    numberInput.addEventListener("input", mark);
-    unitSelect.addEventListener("change", mark);
-    const compose = () => {
-      const n = Utils.clean(numberInput.value);
-      if (!n) return "";
-      return unitSelect.value === "from" ? "From " + n : n + " " + (unitSelect.value === "months" ? "Months" : "Years");
-    };
-    const setError = fieldErrorSetter(field.wrap);
-    return {
-      key: "experience", wrap: field.wrap,
-      read: () => (touched || !orig ? compose() : orig),
-      changed: () => touched && compose().toLowerCase() !== orig.toLowerCase(),
-      setError,
-      validate: () => {
-        const n = Utils.clean(numberInput.value);
-        const year = Number(n);
-        if (unitSelect.value === "from" && n && !(Number.isInteger(year) && year >= 1900 && year <= new Date().getFullYear())) {
-          setError(Lang.t("validation.yearInvalid"));
-          return false;
-        }
-        return true;
-      }
-    };
-  }
-
   function extraAdapter(key, field, original) {
     const orig = Utils.clean(original);
     field.control.value = orig;
@@ -607,11 +573,20 @@
     controls.push(inputAdapter("vehicleNumber", cf.vehicleNumber, values.vehicleNumber));
     controls.push(multiAdapter("bazar", cf.marketSlug, values.bazar, marketOptions));
     controls.push(inputAdapter("serviceArea", cf.serviceArea, values.serviceArea));
-    controls.push(experienceAdapter(cf.experience, values.experience));
+    controls.push(inputAdapter("experience", cf.experience, values.experience));
     controls.push(extraAdapter("qualification", cf.qualification, values.qualification));
     cf.extra.forEach((row, i) => controls.push(extraAdapter("extra" + (i + 1), row, values["extra" + (i + 1)])));
     category.rows.forEach((row) => nodes.push(row.wrap || row));
     category.updateExtraFields();
+
+    [
+      F("serviceAreaBn", "Service Area (Bangla)", "সার্ভিস এরিয়া (বাংলা)"),
+      F("experienceBn", "Experience (Bangla)", "অভিজ্ঞতা (বাংলা)")
+    ].forEach((def) => {
+      const c = buildControl(def, values[def.key] || "", lists, liveCheck);
+      controls.push(c);
+      nodes.push(c.wrap);
+    });
 
     const defs = fieldsFor(kind);
     const build = (list) => list.map((def) => buildControl(def, values[def.key] || "", lists, liveCheck));
@@ -841,6 +816,206 @@
     }
 
     paintList();
+  };
+
+  const PROFILE_EDIT_LABELS = {
+    name: ["Name", "নাম"],
+    nameBn: ["Name (Bangla)", "নাম (বাংলা)"],
+    guardianName: ["Father/Husband Name", "পিতা/স্বামীর নাম"],
+    village: ["Village", "গ্রাম"],
+    postOffice: ["Post Office", "ডাকঘর"],
+    union: ["Union", "ইউনিয়ন"],
+    upazila: ["Upazila", "উপজেলা"],
+    district: ["District", "জেলা"],
+    fullAddress: ["Full Address", "পূর্ণ ঠিকানা"],
+    experience: ["Experience", "অভিজ্ঞতা"],
+    experienceBn: ["Experience (Bangla)", "অভিজ্ঞতা (বাংলা)"],
+    altPhone: ["Alternative Phone", "বিকল্প ফোন"],
+    whatsapp: ["WhatsApp", "হোয়াটসঅ্যাপ"],
+    serviceArea: ["Service Area", "সেবা এলাকা"],
+    serviceAreaBn: ["Service Area (Bangla)", "সেবা এলাকা (বাংলা)"],
+    vehicleNumber: ["Vehicle Number", "গাড়ির নম্বর"],
+    qualification: ["Qualification", "যোগ্যতা"],
+    extra1: ["Extra 1", "অতিরিক্ত ১"],
+    extra2: ["Extra 2", "অতিরিক্ত ২"],
+    extra3: ["Extra 3", "অতিরিক্ত ৩"],
+    extra4: ["Extra 4", "অতিরিক্ত ৪"],
+    socialUrl: ["Social Media Link", "সোশ্যাল মিডিয়া লিংক"]
+  };
+  const PROFILE_EDIT_LONG = { fullAddress: true, socialUrl: true };
+
+  function personPhotoNode(imageUrl, name) {
+    const wrap = Utils.el("div", { class: "admin-rating-item__photo" });
+    if (Utils.resolveImageUrl(imageUrl)) {
+      const img = Utils.el("img", { alt: name || "", loading: "lazy", decoding: "async" });
+      Utils.wireImageFallback(img, imageUrl, () => { wrap.innerHTML = Icons.user; }, null);
+      wrap.appendChild(img);
+    } else {
+      wrap.innerHTML = Icons.user;
+    }
+    return wrap;
+  }
+
+  Admin.openProfileEdits = async function () {
+    const body = Utils.el("div", {});
+    Modal.open(body);
+    const title = T("User Edit Confirm", "ইউজার এডিট কনফার্ম");
+    let items = [];
+
+    function show(nodes) {
+      body.innerHTML = "";
+      nodes.forEach((node) => { if (node) body.appendChild(node); });
+    }
+
+    function removeItem(driverId) {
+      items = items.filter((x) => x.driverId !== driverId);
+      setCount("profileEdits", items.length);
+    }
+
+    function showList() {
+      const listBox = Utils.el("div", { class: "admin-pending-list" });
+      if (!items.length) {
+        listBox.appendChild(Utils.el("p", { class: "admin-empty", text: T("No pending user edits.", "কোনো পেন্ডিং ইউজার এডিট নেই।") }));
+      }
+      items.forEach((item) => {
+        const meta = [item.driverId, item.phone].filter(Boolean).join(" · ");
+        const countText = item.changes.length + T(" change(s)", " টি পরিবর্তন") + (item.submittedDate ? " · " + Utils.formatDateTime(item.submittedDate) : "");
+        listBox.appendChild(Utils.el("div", { class: "admin-pending-item" }, [
+          personPhotoNode(item.imageUrl, item.name),
+          Utils.el("div", { class: "admin-pending-item__info" }, [
+            Utils.el("div", { class: "admin-pending-item__name", text: item.name || item.driverId }),
+            Utils.el("div", { class: "admin-pending-item__meta", text: meta }),
+            Utils.el("div", { class: "admin-pending-item__meta", text: countText })
+          ]),
+          Utils.el("div", { class: "admin-pending-item__actions" }, [
+            Utils.el("button", { type: "button", class: "btn btn--primary btn--sm", text: T("Review", "দেখুন"), onClick: () => showDetail(item) })
+          ])
+        ]));
+      });
+      show([closeHead(title, () => Modal.close()), listBox]);
+    }
+
+    function showDetail(item) {
+      const rows = item.changes.map((change) => {
+        const def = PROFILE_EDIT_LABELS[change.key] || [change.key, change.key];
+        const isLong = !!PROFILE_EDIT_LONG[change.key];
+        const control = isLong ? Utils.el("textarea", { rows: "2" }) : Utils.el("input", { type: "text" });
+        control.value = change.newValue;
+        const errorMsg = Utils.el("div", { class: "error-msg" });
+        const keepBtn = Utils.el("button", { type: "button", class: "btn btn--ghost btn--sm", text: T("Keep old", "পুরোনোটাই রাখো") });
+        const wrap = Utils.el("div", { class: "field admin-edit-change" }, [
+          Utils.el("div", { class: "admin-edit-change__label", text: T(def[0], def[1]) }),
+          Utils.el("div", { class: "admin-edit-change__tag", text: T("Old", "পুরোনো") }),
+          Utils.el("div", { class: "admin-edit-change__old", text: change.oldValue || "—" }),
+          Utils.el("div", { class: "admin-edit-change__tag", text: T("New", "নতুন") }),
+          control,
+          errorMsg,
+          Utils.el("div", { class: "admin-edit-change__actions" }, [keepBtn])
+        ]);
+        const row = { key: change.key, wrap, control, errorMsg, keep: false };
+        keepBtn.addEventListener("click", () => {
+          row.keep = !row.keep;
+          control.disabled = row.keep;
+          wrap.classList.toggle("is-kept", row.keep);
+          keepBtn.textContent = row.keep ? T("Use new", "নতুনটা নাও") : T("Keep old", "পুরোনোটাই রাখো");
+          errorMsg.textContent = "";
+        });
+        return row;
+      });
+
+      const saveBtn = Utils.el("button", { type: "button", class: "btn btn--primary btn--block", text: T("Save", "সংরক্ষণ করুন") });
+      const rejectLabel = T("Reject whole edit", "পুরো এডিট বাতিল");
+      const rejectBtn = Utils.el("button", { type: "button", class: "btn btn--ghost btn--block", text: rejectLabel });
+      let armed = false;
+      let armTimer = null;
+
+      function disarm() {
+        armed = false;
+        clearTimeout(armTimer);
+        rejectBtn.textContent = rejectLabel;
+        rejectBtn.classList.remove("btn--danger");
+        rejectBtn.classList.add("btn--ghost");
+      }
+
+      async function submit(values, doneText) {
+        saveBtn.disabled = true;
+        rejectBtn.disabled = true;
+        try {
+          const t = tokens();
+          await guarded(() => Api.adminResolveProfileEdit(t.token, t.adminToken, item.driverId, values));
+          removeItem(item.driverId);
+          Toast.show(doneText, "success");
+          showList();
+        } catch (err) {
+          if (err && LOST_CODES.indexOf(err.code) !== -1) return;
+          Toast.show(errorText(err), "error");
+          if (err && err.code === "NOT_FOUND") { removeItem(item.driverId); showList(); return; }
+          saveBtn.disabled = false;
+          rejectBtn.disabled = false;
+        }
+      }
+
+      saveBtn.addEventListener("click", () => {
+        disarm();
+        let valid = true;
+        const values = {};
+        rows.forEach((row) => {
+          row.errorMsg.textContent = "";
+          row.wrap.classList.remove("has-error");
+          if (row.keep) return;
+          const value = Utils.clean(row.control.value);
+          if (row.key === "name" && !value) {
+            row.errorMsg.textContent = Lang.t("validation.required");
+            row.wrap.classList.add("has-error");
+            valid = false;
+            return;
+          }
+          values[row.key] = value;
+        });
+        if (!valid) return;
+        submit(values, T("Saved.", "সংরক্ষিত হয়েছে।"));
+      });
+
+      rejectBtn.addEventListener("click", () => {
+        if (!armed) {
+          armed = true;
+          rejectBtn.textContent = T("Tap again to confirm", "নিশ্চিত করতে আবার চাপুন");
+          rejectBtn.classList.remove("btn--ghost");
+          rejectBtn.classList.add("btn--danger");
+          armTimer = setTimeout(disarm, 4000);
+          return;
+        }
+        disarm();
+        submit({}, T("Edit rejected.", "এডিট বাতিল করা হয়েছে।"));
+      });
+
+      const identity = Utils.el("div", { class: "admin-edit-id" }, [
+        personPhotoNode(item.imageUrl, item.name),
+        Utils.el("div", { class: "admin-pending-item__info" }, [
+          Utils.el("div", { class: "admin-pending-item__name", text: item.name || item.driverId }),
+          Utils.el("div", { class: "admin-pending-item__meta", text: [T("ID: ", "আইডি: ") + item.driverId, item.phone].filter(Boolean).join(" · ") })
+        ])
+      ]);
+
+      show([
+        closeHead(item.name || item.driverId, showList),
+        identity,
+        Utils.el("div", { class: "admin-edit-changes" }, rows.map((row) => row.wrap)),
+        Utils.el("div", { class: "admin-edit-actions" }, [saveBtn, rejectBtn])
+      ]);
+    }
+
+    show([closeHead(title, () => Modal.close()), Utils.el("div", { class: "admin-loading" }, [spinnerNode()])]);
+    try {
+      const t = tokens();
+      items = await guarded(() => Api.adminListProfileEdits(t.token, t.adminToken));
+    } catch (err) {
+      if (err && LOST_CODES.indexOf(err.code) !== -1) return;
+      show([closeHead(title, () => Modal.close()), Utils.el("p", { class: "admin-verify__error", text: errorText(err) })]);
+      return;
+    }
+    setCount("profileEdits", items.length);
+    showList();
   };
 
   Admin.openRatings = async function () {

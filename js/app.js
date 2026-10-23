@@ -65,7 +65,7 @@
     activeOverlay = overlay;
     activeOnClose = (opts && opts.onClose) || null;
     if (pendingBackTimer && !pendingStackBack) { clearTimeout(pendingBackTimer); pendingBackTimer = null; }
-    if (!modalEntryPushed) {
+    if (!modalEntryPushed && !BackGuard.holding()) {
       currentEntryId = ++modalEntryId;
       history.pushState({ nobiModal: currentEntryId }, "", window.location.hash || "#/");
       modalEntryPushed = true;
@@ -236,13 +236,37 @@
   }
 
   ViewHelpers.driverShareUrl = function (driverId) {
-    return siteBaseUrl() + "#/driver/" + encodeURIComponent(driverId);
+    return siteBaseUrl() + "#/user/" + encodeURIComponent(driverId);
   };
 
-  async function shareLink(url, title) {
+  function shareTitleWithSite(title) {
+    const site = Lang.t("site.name");
+    const t = Utils.clean(title);
+    return !t || t === site ? site : t + " \u2014 " + site;
+  }
+
+  function pageShareTitle(rawPath, row) {
+    if (rawPath === "/") return Lang.t("site.name");
+    const span = row ? row.querySelector("span") : null;
+    const heading = span ? Utils.clean(span.textContent) : "";
+    const m = rawPath.match(/^\/markets\/([^/]+)(?:\/([^/]+))?$/);
+    if (m) {
+      const markets = window.Api && window.Api.peekMarkets ? window.Api.peekMarkets() : null;
+      let slug = m[1];
+      try { slug = decodeURIComponent(slug); } catch (err) { }
+      const market = markets ? markets.find((x) => x.slug === slug) : null;
+      const bn = Lang.current() === "bn";
+      const name = market ? ((bn ? market.nameBn : market.nameEn) || market.nameEn || market.nameBn || "") : "";
+      if (name) return m[2] && heading ? heading + " \u2014 " + name : name;
+    }
+    return heading || Lang.t("site.name");
+  }
+
+  async function shareLink(url, rawTitle) {
+    const title = shareTitleWithSite(rawTitle);
     if (navigator.share) {
       try {
-        await navigator.share({ title: title, url: url });
+        await navigator.share({ title: title, text: title, url: url });
         return;
       } catch (err) {
         if (err && err.name === "AbortError") return;
@@ -250,12 +274,12 @@
     }
     let copied = false;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(title + "\n" + url);
       copied = true;
     } catch (err) {
       try {
         const box = document.createElement("textarea");
-        box.value = url;
+        box.value = title + "\n" + url;
         box.setAttribute("readonly", "");
         box.style.position = "fixed";
         box.style.opacity = "0";
@@ -299,7 +323,7 @@
     if (!row) return;
     row.appendChild(ViewHelpers.shareAnchor(ViewHelpers.shareButton(
       () => siteBaseUrl() + (window.location.hash || "#/"),
-      () => document.title || Lang.t("site.name")
+      () => pageShareTitle(rawPath, row)
     )));
   }
 
@@ -307,7 +331,7 @@
     const link = e.target && e.target.closest ? e.target.closest("a[data-internal]") : null;
     if (!link) return;
     const target = link.getAttribute("href");
-    if (!target || /^#\/driver\//.test(target)) return;
+    if (!target || /^#\/(?:driver|user)\//.test(target)) return;
     e.preventDefault();
     if (window.location.hash === target) return;
     Modal.closeThen(() => { window.location.hash = target; });
@@ -363,7 +387,9 @@
     if (st && st.nobiModal && lastPageKey) return lastPageKey;
     if (st && st.navKey) return st.navKey;
     const key = "k" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    try { history.replaceState(Object.assign({}, st || {}, { navKey: key }), ""); } catch (e) {}
+    const patch = { navKey: key };
+    if (BackGuard.isBuilt()) patch.nobiGB = true;
+    try { history.replaceState(Object.assign({}, st || {}, patch), ""); } catch (e) {}
     return key;
   }
 
@@ -411,6 +437,109 @@
     return hash.slice(1) || "/";
   }
 
+  const BackGuard = (function () {
+    const ARM_MS = 3000;
+    const enabled = (function () {
+      try {
+        return window.matchMedia("(display-mode: standalone)").matches ||
+          window.matchMedia("(display-mode: fullscreen)").matches ||
+          window.navigator.standalone === true;
+      } catch (e) { return false; }
+    })();
+    let started = false;
+    let built = false;
+    let armedAt = 0;
+
+    function matchRoute(rawPath) {
+      for (const route of Router.routes) {
+        const m = rawPath.match(route.regex);
+        if (!m) continue;
+        const params = {};
+        route.paramNames.forEach((name, i) => {
+          try { params[name] = decodeURIComponent(m[i + 1]); } catch (e) { params[name] = m[i + 1]; }
+        });
+        return { route: route, params: params };
+      }
+      return null;
+    }
+
+    function build() {
+      const st = history.state;
+      if (st && st.nobiGB) { built = true; return true; }
+      if (modalEntryPushed || (st && st.nobiModal && activeOverlay)) return false;
+      const hash = window.location.hash || "#/";
+      const rawPath = (hash.slice(1) || "/").split("?")[0];
+      const deep = /^\/(?:driver|user)\//.test(rawPath);
+      const found = matchRoute(rawPath);
+      let ancestors = found ? found.route.ancestors : [];
+      if (deep && !ancestors.length) ancestors = ["/"];
+      const chain = ancestors.map((p) => "#" + fillPattern(p, found ? found.params : {}));
+      const finalState = { nobiGB: true };
+      if (st && st.navKey) finalState.navKey = st.navKey;
+      if (deep) finalState.nobiDeep = true;
+      try {
+        history.replaceState({ nobiGB: true, nobiGuard: true }, "", "#/");
+        chain.forEach((h) => history.pushState({ nobiGB: true }, "", h));
+        history.pushState(finalState, "", hash);
+        built = true;
+      } catch (e) {
+        built = false;
+      }
+      return true;
+    }
+
+    function whenActivated(fn) {
+      const ua = window.navigator.userActivation;
+      const events = ["pointerup", "touchend", "mousedown", "keydown", "click"];
+      const handler = () => {
+        if (ua && !ua.hasBeenActive) return;
+        if (!fn()) return;
+        events.forEach((ev) => window.removeEventListener(ev, handler, true));
+      };
+      if (ua && ua.hasBeenActive && fn()) return;
+      events.forEach((ev) => window.addEventListener(ev, handler, true));
+    }
+
+    function start() {
+      if (!enabled || started) return;
+      started = true;
+      const st = history.state;
+      if (st && st.nobiGB) { built = true; return; }
+      whenActivated(build);
+    }
+
+    window.addEventListener("popstate", () => {
+      if (!enabled) return;
+      const st = history.state;
+      if (!st || !st.nobiGuard) return;
+      const now = Date.now();
+      if (armedAt && now - armedAt < ARM_MS) {
+        armedAt = 0;
+        history.back();
+        return;
+      }
+      armedAt = now;
+      try { history.pushState({ nobiGB: true }, "", "#/"); } catch (e) {}
+      Toast.show(Lang.t("exit.pressAgain"));
+    });
+
+    window.addEventListener("hashchange", () => { armedAt = 0; });
+
+    return {
+      enabled: enabled,
+      start: start,
+      holding: () => enabled && started && !built,
+      isBuilt: () => built,
+      leaveDeepEntry: function () {
+        if (!enabled || !built) return false;
+        if (!(history.state && history.state.nobiDeep)) return false;
+        history.back();
+        return true;
+      }
+    };
+  })();
+  window.BackGuard = BackGuard;
+
   async function renderRoute() {
     const path = currentPath();
     const [rawPath, queryString] = path.split("?");
@@ -430,7 +559,7 @@
       if (match) {
         const params = {};
         route.paramNames.forEach((name, i) => { params[name] = decodeURIComponent(match[i + 1]); });
-        if (isFirstRouteRender) {
+        if (isFirstRouteRender && !BackGuard.enabled) {
           synthesizeAncestorHistory(route, params, window.location.hash || "#/");
         }
         isFirstRouteRender = false;
@@ -570,6 +699,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    BackGuard.start();
     wireHeader();
     Lang.apply();
     if (window.Api && window.Api.preload) window.Api.preload().catch(() => {});

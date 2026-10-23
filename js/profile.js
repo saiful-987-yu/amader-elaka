@@ -401,7 +401,7 @@
             document.createTextNode(Lang.t("profile.ratingLabel", { rating: ratingDisplay })),
             Utils.el("span", { class: "dot-sep", text: "|" }),
             Utils.el("span", { html: Icons.shield, style: "display:inline-flex;" }),
-            Utils.el("span", { text: Utils.formatExperience(driver.experience) || "—" })
+            Utils.el("span", { text: Utils.formatExperience(Utils.localizedField(driver, "experience")) || "—" })
           ])
         ])
       ])
@@ -451,7 +451,7 @@
         Utils.el("span", { html: Icons.map }),
         Utils.el("div", {}, [
           Utils.el("div", { class: "service-area-row__label", text: Lang.t("driver.serviceArea") }),
-          Utils.el("div", { class: "service-area-row__text", text: driver.serviceArea || "—" })
+          Utils.el("div", { class: "service-area-row__text", text: Utils.localizedField(driver, "serviceArea") || "—" })
         ])
       ])
     ].filter(Boolean));
@@ -494,7 +494,7 @@
         galleryBlock,
         Utils.el("div", { class: "vehicle-info-top" }, [
           overviewItem(Icons.vehicle(primarySlug || "other"), Lang.t("detail.regNumber"), driver.vehicleNumber || "—"),
-          overviewItem(Icons.shield, Lang.t("detail.experience"), Utils.formatExperience(driver.experience) || "—")
+          overviewItem(Icons.shield, Lang.t("detail.experience"), Utils.formatExperience(Utils.localizedField(driver, "experience")) || "—")
         ]),
         overviewItem(Icons.userLarge, Lang.t("detail.serviceType"), resolveVehicleTypeNames(driver.vehicleType, vehicleCategories).join(", ") || "—"),
         overviewItem(Icons.map, Lang.t("profile.preferredBazar"),
@@ -613,6 +613,8 @@
     const pf = personal.fields;
     const twoCol = (a, b) => Utils.el("div", { class: "field-row-2col" }, [a.wrap, b.wrap]);
 
+    const base = Object.assign({}, driver, driver.pendingEdit || {});
+    const hasPendingEdit = !!(driver.pendingEdit && Object.keys(driver.pendingEdit).length);
     const ownCategories = Utils.splitMulti(driver.vehicleType);
     const category = RF.createCategoryRows({
       vehicleOptions: ownCategories.map((slug) => ({ value: slug, label: slug, search: slug })),
@@ -623,31 +625,35 @@
     cf.vehicleType.wrap.querySelectorAll("input[type=checkbox]").forEach((cb) => { cb.checked = true; });
     category.updateExtraFields();
 
-    const experienceText = Utils.clean(driver.experience).replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
-    const experienceInput = cf.experience.wrap.querySelector("#experienceValue");
-    const experienceUnit = cf.experience.wrap.querySelector("#experienceUnit");
-    const fromMatch = experienceText.match(/^from\s+(\d{1,4})$/i) || experienceText.match(/^(\d{1,4})\s*(?:সাল\s*)?থেকে$/);
-    const spanMatch = experienceText.match(/^(\d+(?:\.\d+)?)\s*(years?|yrs?|months?|বছর|মাস)$/i);
-    if (fromMatch) { experienceInput.value = fromMatch[1]; experienceUnit.value = "from"; }
-    else if (spanMatch) { experienceInput.value = spanMatch[1]; experienceUnit.value = /^(month|মাস)/i.test(spanMatch[2]) ? "months" : "years"; }
-    experienceUnit.dispatchEvent(new Event("change"));
-    const experienceInitial = experienceInput.value + "|" + experienceUnit.value;
+    const serviceAreaBnField = formField({ id: "serviceAreaBn", labelText: Lang.t("field.serviceAreaBn"), type: "text" });
+    const experienceBnField = formField({ id: "experienceBn", labelText: Lang.t("field.experienceBn"), type: "text" });
+    const socialControl = Utils.el("textarea", { id: "socialUrl", name: "socialUrl", rows: "2", placeholder: Lang.t("register.step3.socialPlaceholder") });
+    const socialWrap = Utils.el("div", { class: "field", "data-field": "socialUrl" }, [
+      Utils.el("label", { for: "socialUrl", text: Lang.t("register.step3.socialLabelPrefix") }),
+      socialControl,
+      Utils.el("div", { class: "hint", text: Lang.t("register.step3.socialHint") })
+    ]);
 
-    pf.fullName.control.value = driver.name || "";
-    pf.fullNameBn.control.value = driver.nameBn || "";
-    pf.guardianName.control.value = driver.guardianName || "";
-    pf.village.control.value = driver.village || "";
-    pf.postOffice.control.value = driver.postOffice || "";
-    pf.union.control.value = driver.union || "";
-    pf.upazila.control.value = driver.upazila || "";
-    pf.district.control.value = driver.district || "";
-    pf.fullAddress.control.value = driver.fullAddress || "";
-    pf.altMobile.control.value = driver.altPhone || "";
-    pf.whatsapp.control.value = driver.whatsapp || "";
-    cf.vehicleNumber.control.value = driver.vehicleNumber || "";
-    cf.serviceArea.control.value = driver.serviceArea || "";
-    cf.qualification.control.value = driver.qualification || "";
-    cf.extra.forEach((row, i) => { row.control.value = driver["extra" + (i + 1)] || ""; });
+    cf.experience.control.value = Utils.clean(base.experience);
+
+    pf.fullName.control.value = base.name || "";
+    pf.fullNameBn.control.value = base.nameBn || "";
+    pf.guardianName.control.value = base.guardianName || "";
+    pf.village.control.value = base.village || "";
+    pf.postOffice.control.value = base.postOffice || "";
+    pf.union.control.value = base.union || "";
+    pf.upazila.control.value = base.upazila || "";
+    pf.district.control.value = base.district || "";
+    pf.fullAddress.control.value = base.fullAddress || "";
+    pf.altMobile.control.value = base.altPhone || "";
+    pf.whatsapp.control.value = base.whatsapp || "";
+    cf.vehicleNumber.control.value = base.vehicleNumber || "";
+    cf.serviceArea.control.value = base.serviceArea || "";
+    serviceAreaBnField.control.value = base.serviceAreaBn || "";
+    experienceBnField.control.value = base.experienceBn || "";
+    socialControl.value = base.socialUrl || "";
+    cf.qualification.control.value = base.qualification || "";
+    cf.extra.forEach((row, i) => { row.control.value = base["extra" + (i + 1)] || ""; });
 
     const saveBtn = Utils.el("button", { type: "submit", class: "btn btn--primary btn--block mt-5", text: Lang.t("profile.save") });
 
@@ -661,8 +667,11 @@
       pf.fullAddress,
       cf.vehicleNumber,
       cf.serviceArea,
+      serviceAreaBnField,
       category.rows[4],
-      category.rows[5]
+      category.rows[5],
+      experienceBnField,
+      { wrap: socialWrap }
     ].forEach((row) => form.appendChild(row.wrap || row));
     form.appendChild(saveBtn);
 
@@ -671,6 +680,7 @@
         Utils.el("h3", { text: Lang.t("profile.editProfile") }),
         Utils.el("button", { class: "icon-btn", "aria-label": Lang.t("a11y.closeModal"), html: Icons.close, onClick: () => Modal.close() })
       ]),
+      hasPendingEdit ? Utils.el("p", { class: "hint", text: Lang.t("profile.editPendingNote") }) : null,
       form
     ]);
 
@@ -697,19 +707,19 @@
         serviceArea: Utils.clean(cf.serviceArea.control.value),
         vehicleNumber: Utils.clean(cf.vehicleNumber.control.value)
       };
+      [["serviceAreaBn", serviceAreaBnField.control], ["experienceBn", experienceBnField.control], ["socialUrl", socialControl]].forEach(([key, control]) => {
+        const value = Utils.clean(control.value);
+        if (value || Utils.clean(base[key] || "")) fields[key] = value;
+      });
       [["village", pf.village], ["postOffice", pf.postOffice], ["union", pf.union], ["upazila", pf.upazila], ["district", pf.district], ["fullAddress", pf.fullAddress]].forEach(([key, row]) => {
         const value = Utils.clean(row.control.value);
-        if (value || Utils.clean(driver[key] || "")) fields[key] = value;
+        if (value || Utils.clean(base[key] || "")) fields[key] = value;
       });
-      const experienceValue = Utils.clean(experienceInput.value);
-      if (experienceValue && experienceValue + "|" + experienceUnit.value !== experienceInitial) {
-        fields.experience = experienceUnit.value === "from"
-          ? "From " + experienceValue
-          : experienceValue + " " + (experienceUnit.value === "months" ? "Months" : "Years");
-      }
+      const experienceValue = Utils.clean(cf.experience.control.value);
+      if (experienceValue || Utils.clean(base.experience || "")) fields.experience = experienceValue;
       if (isShown(cf.qualification)) fields.qualification = Utils.clean(cf.qualification.control.value);
       cf.extra.forEach((row, i) => { if (isShown(row)) fields["extra" + (i + 1)] = Utils.clean(row.control.value); });
-      const changed = Object.keys(fields).some((key) => fields[key] !== Utils.clean(driver[key] || ""));
+      const changed = Object.keys(fields).some((key) => fields[key] !== Utils.clean(base[key] || ""));
       if (!changed) { Toast.show(Lang.t("profile.noChanges")); return; }
 
       saveBtn.disabled = true;
@@ -719,7 +729,7 @@
         const updated = await Auth.updateProfile(fields);
         Object.assign(driver, updated);
         Modal.close();
-        Toast.show(Lang.t("profile.editSuccess"), "success");
+        Toast.show(Lang.t(updated && updated.pendingApproval ? "profile.editPending" : "profile.editSuccess"), "success");
         if (onSaved) onSaved();
       } catch (err) {
         if (err.code === "SESSION_EXPIRED") {

@@ -20,6 +20,64 @@
     return String(text).replace(/\d/g, (d) => DIGITS_BN[Number(d)]);
   }
 
+  const WEEK_BN = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+  const WEEK_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const GREG_BN = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+  const GREG_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const BANGLA_FULL_BN = ["বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ণ", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"];
+  const BANGLA_FULL_EN = ["Boishakh", "Joishtho", "Ashar", "Srabon", "Bhadro", "Ashwin", "Kartik", "Ogrohayon", "Poush", "Magh", "Falgun", "Choitro"];
+  const HIJRI_FULL_BN = ["মুহাররম", "সফর", "রবিউল আউয়াল", "রবিউস সানি", "জমাদিউল আউয়াল", "জমাদিউস সানি", "রজব", "শাবান", "রমজান", "শাওয়াল", "জিলকদ", "জিলহজ"];
+  const HIJRI_FULL_EN = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Shaban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah"];
+
+  function isBn() {
+    return !!(window.Lang && window.Lang.current() === "bn");
+  }
+
+  function ordinalEn(n) {
+    const v = n % 100;
+    if (v >= 11 && v <= 13) return n + "th";
+    return n + (["th", "st", "nd", "rd"][n % 10] || "th");
+  }
+
+  function sayDate(now, day, monthIndex, year, kind) {
+    const wd = now.getDay();
+    if (isBn()) {
+      const months = kind === "bangla" ? BANGLA_FULL_BN : kind === "hijri" ? HIJRI_FULL_BN : GREG_BN;
+      const era = kind === "bangla" ? "বঙ্গাব্দ" : kind === "hijri" ? "হিজরি" : "খ্রিস্টাব্দ";
+      return "আজ " + WEEK_BN[wd] + ", " + months[monthIndex] + " মাসের " + toBanglaDigits(day) + " তারিখ, " + toBanglaDigits(year) + " " + era;
+    }
+    const months = kind === "bangla" ? BANGLA_FULL_EN : kind === "hijri" ? HIJRI_FULL_EN : GREG_EN;
+    const tail = kind === "bangla" ? " in the Bengali calendar" : kind === "hijri" ? " in the Hijri calendar" : "";
+    return "Today is " + WEEK_EN[wd] + ", the " + ordinalEn(day) + " of " + months[monthIndex] + ", " + year + tail + ".";
+  }
+
+  function sayTime(now) {
+    const h24 = now.getHours();
+    const m = now.getMinutes();
+    const t = h24 * 60 + m;
+    const h12 = h24 % 12 || 12;
+    if (isBn()) {
+      let period = "রাত";
+      if (t >= 240 && t < 360) period = "ভোর";
+      else if (t >= 360 && t < 720) period = "সকাল";
+      else if (t >= 720 && t < 900) period = "দুপুর";
+      else if (t >= 900 && t < 1050) period = "বিকেল";
+      else if (t >= 1050 && t < 1140) period = "সন্ধ্যা";
+      return "এখন সময় " + period + " " + toBanglaDigits(h12) + "টা" + (m ? " " + toBanglaDigits(m) + " মিনিট" : "");
+    }
+    let period = "at night";
+    if (t >= 300 && t < 720) period = "in the morning";
+    else if (t >= 720 && t < 1020) period = "in the afternoon";
+    else if (t >= 1020 && t < 1260) period = "in the evening";
+    return "The time is now " + (m ? h12 + ":" + pad(m) : h12 + " o'clock") + " " + period + ".";
+  }
+
+  function announce(text) {
+    if (!text) return;
+    if (window.Utils && Utils.speak) Utils.speak(text, isBn() ? "bn" : "en");
+    if (window.Toast && Toast.show) Toast.show(text);
+  }
+
   function paintSide(el, day, month, year) {
     el.textContent = "";
     [["clock-bar__num", toBanglaDigits(pad(day))], ["clock-bar__month", month], ["clock-bar__num", toBanglaDigits(year)]].forEach((part) => {
@@ -79,6 +137,23 @@
       hjEl
     ]);
     const wrap = Utils.el("div", { class: "container clock-bar-wrap" }, [bar]);
+
+    const timeEl = bar.querySelector(".clock-bar__time");
+    bnEl.addEventListener("click", () => {
+      const now = new Date();
+      const b = banglaDate(now);
+      announce(sayDate(now, b.day, b.month, b.year, "bangla"));
+    });
+    dateEl.addEventListener("click", () => {
+      const now = new Date();
+      announce(sayDate(now, now.getDate(), now.getMonth(), now.getFullYear(), "english"));
+    });
+    hjEl.addEventListener("click", () => {
+      const now = new Date();
+      const h = hijriDate(now);
+      if (h) announce(sayDate(now, h.day, h.month, h.year, "hijri"));
+    });
+    if (timeEl) timeEl.addEventListener("click", () => announce(sayTime(new Date())));
 
     let seen = false;
     let ticks = 0;

@@ -65,34 +65,6 @@
     return { wrap };
   }
 
-  function experienceField() {
-    const numberInput = Utils.el("input", { id: "experienceValue", name: "experienceValue", type: "number", min: "0", inputmode: "numeric" });
-    const unitSelect = Utils.el("select", { id: "experienceUnit", name: "experienceUnit" });
-    [["years", Lang.t("field.experienceYears")], ["months", Lang.t("field.experienceMonths")], ["from", Lang.t("field.experienceFrom")]].forEach(([value, text]) =>
-      unitSelect.appendChild(Utils.el("option", { value, text }))
-    );
-    function syncExperienceUnit() {
-      if (unitSelect.value === "from") {
-        numberInput.min = "1900";
-        numberInput.max = String(new Date().getFullYear());
-        numberInput.placeholder = "2010";
-      } else {
-        numberInput.min = "0";
-        numberInput.removeAttribute("max");
-        numberInput.placeholder = "";
-      }
-    }
-    unitSelect.addEventListener("change", syncExperienceUnit);
-    setTimeout(syncExperienceUnit, 0);
-    const row = Utils.el("div", { class: "experience-row" }, [numberInput, unitSelect]);
-    const errorMsg = Utils.el("div", { class: "error-msg", "data-error-for": "experienceValue" });
-    const wrap = Utils.el("div", { class: "field", "data-field": "experienceValue" }, [
-      Utils.el("label", { for: "experienceValue", text: Lang.t("field.experience") }),
-      row, errorMsg
-    ]);
-    return { wrap };
-  }
-
   function twoColFieldRow(a, b) {
     return Utils.el("div", { class: "field-row-2col" }, [a.wrap, b.wrap]);
   }
@@ -333,7 +305,7 @@
         const dataUrl = String(reader.result || "");
         const base64 = dataUrl.split(",")[1] || "";
         try {
-          const res = await Api.uploadDriverPhoto(base64, file.type);
+          const res = await Api.uploadDriverPhoto(base64, file.type, Utils.clean(session.data && session.data.fullName), Utils.clean(session.data && session.data.mobile));
           if (!res || !res.url) { failed("field.photoUploadError"); return; }
           finish({ valid: true, stage: "confirmed", error: "", url: res.url, preview: dataUrl });
         } catch (err) {
@@ -503,8 +475,9 @@
     serviceAreaField.wrap.classList.add("field--tint-b");
     serviceAreaField.control.placeholder = "Nobi Bazar + 50 km Coverage Radius";
 
-    const experienceRow = experienceField();
+    const experienceRow = fieldRow({ id: "experience", labelKey: "field.experience" });
     experienceRow.wrap.classList.add("field--tint-d");
+    experienceRow.control.placeholder = Lang.t("field.experiencePlaceholder");
 
     const slugOf = opts.slugOf || ((value) => value);
     const clearHidden = opts.clearHidden !== false;
@@ -742,13 +715,7 @@
         }
       });
       Object.keys(checkboxGroups).forEach((key) => { data[key] = checkboxGroups[key].join(", "); });
-      if (data.experienceValue) {
-        data.experience = data.experienceUnit === "from"
-          ? "From " + Utils.clean(data.experienceValue)
-          : Utils.clean(data.experienceValue) + " " + (data.experienceUnit === "months" ? "Months" : "Years");
-      } else {
-        data.experience = "";
-      }
+      if (data.experience !== undefined) data.experience = Utils.clean(data.experience);
     }
     flushActiveSessionFields = collectStepValues;
 
@@ -785,12 +752,6 @@
           const category = vehicles.find((v) => v.slug === slug);
           return !(category && category.isOther);
         });
-        const fromYear = Number(Utils.clean(data.experienceValue));
-        if (data.experienceUnit === "from" && Utils.clean(data.experienceValue) &&
-            !(Number.isInteger(fromYear) && fromYear >= 1900 && fromYear <= new Date().getFullYear())) {
-          setFieldError(app, "experienceValue", Lang.t("validation.yearInvalid"));
-          valid = false;
-        } else setFieldError(app, "experienceValue", "");
         ["vehicleType", "vehicleNumber", "marketSlug", "serviceArea"].forEach((id) => {
           if (id === "vehicleNumber" && !needsVehicle) { setFieldError(app, id, ""); return; }
           const value = Utils.clean(data[id]);

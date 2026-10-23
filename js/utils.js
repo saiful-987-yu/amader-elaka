@@ -260,7 +260,7 @@
   Utils.driverDisplayName = function (driver) {
     if (!driver) return "";
     const isBn = window.Lang && window.Lang.current() === "bn";
-    return (isBn && driver.nameBn) ? driver.nameBn : driver.name;
+    return isBn ? (driver.nameBn || driver.name) : (driver.name || driver.nameBn);
   };
 
   Utils.clean = function (value) {
@@ -549,6 +549,13 @@
     const m = text.match(/^from\s+(\d{4})$/i);
     if (!m) return text;
     return Lang.current() === "bn" ? m[1] + " থেকে" : "From " + m[1];
+  };
+
+  Utils.localizedField = function (driver, key) {
+    const base = driver[key];
+    const bn = Utils.clean(driver[key + "Bn"]);
+    if (window.Lang && window.Lang.current() === "bn") return bn || base;
+    return Utils.clean(base) ? base : (bn || base);
   };
 
   Utils.extraLabel = function (def) {

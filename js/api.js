@@ -516,7 +516,7 @@
     });
   };
 
-  Api.uploadDriverPhoto = (imageBase64, mimeType) => call("uploadDriverPhoto", { imageBase64, mimeType });
+  Api.uploadDriverPhoto = (imageBase64, mimeType, name, phone) => call("uploadDriverPhoto", { imageBase64, mimeType, name, phone });
 
   Api.registerDriver = (formData) => call("registerDriver", formData)
     .then((res) => {
@@ -529,6 +529,8 @@
   Api.checkPhone = (phone) => call("checkPhone", { phone });
 
   Api.login = (identifier, password) => call("login", { identifier, password });
+  Api.getFavorites = (token) => call("getFavorites", { token });
+  Api.saveFavorites = (token, favorites) => call("saveFavorites", { token, favorites });
   Api.getProfile = (token) => cachedCall("getProfile", { token }, STATUS_CACHE_TTL);
   Api.peekProfile = (token) => peek("getProfile", { token }, STATUS_CACHE_TTL);
 
@@ -624,6 +626,12 @@
       return res;
     });
   Api.adminPendingCounts = (token, adminToken) => call("adminPendingCounts", { token, adminToken });
+  Api.adminListProfileEdits = (token, adminToken) => call("adminListProfileEdits", { token, adminToken });
+  Api.adminResolveProfileEdit = (token, adminToken, id, values) =>
+    call("adminResolveProfileEdit", { token, adminToken, id, values }).then((res) => {
+      Api.refreshDirectories();
+      return res;
+    });
 
   window.Api = Api;
 })(window, window.Utils);

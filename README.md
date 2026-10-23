@@ -64,7 +64,7 @@ https://tinyurl.com/Amader-Elaka-Apps
 | 3 | [Connecting a real Google Sheet](#3-connecting-a-real-google-sheet) |
 | 4 | [How to add things later](#4-how-to-add-things-later) |
 | 5 | [Driver login & availability](#5-driver-login--availability) |
-| 5.5 – 5.9 | Banners · Performance · PWA & service worker · Local photos · Install screenshots |
+| 5.5 – 5.10 | Banners · Performance · PWA & service worker · Local photos · Install screenshots · Favorites, share links & PIN-locked profiles |
 | 6 | [Known limitations](#6-known-limitations) |
 | 7 | [Security notes](#7-security-notes) |
 | 8 | [Deploying the site itself](#8-deploying-the-site-itself) |
@@ -219,7 +219,7 @@ automatically by the backend when first needed — see below:
 - `Other Categories` — `TRUE` (case-insensitive) moves the category out of the normal Bazar → Vehicle flow and into the **Other Section** (see §3.6). `FALSE` or blank keeps it a normal vehicle category. The two groups never overlap: a category marked `TRUE` is not offered under any bazar.
 
 **Users**
-`Driver ID | Name | Bengali Name | Father/Husband Name | Phone | Alternative Phone | Village | Post Office | Union | Upazila | District | Full Address | Vehicle Type | Vehicle Number | Bazar | Service Area | Driving Experience | Driver Image URL | Vehicle Image URL | Social Media URL | Username | Password | Status | Availability | Created Date | Updated Date | Star Rating | WhatsApp | Emergency Contact | Sort Status | Personal Details | Video URL | Manual Rating | Public Rating Cache | Public Rating Count | Admin Status`
+`Driver ID | Name | Bengali Name | Father/Husband Name | Phone | Alternative Phone | Village | Post Office | Union | Upazila | District | Full Address | Vehicle Type | Vehicle Number | Bazar | Service Area | Service Area Bangla | Driving Experience | Experience Bangla | Driver Image URL | Vehicle Image URL | Social Media URL | Username | Password | Status | Availability | Created Date | Updated Date | Star Rating | WhatsApp | Emergency Contact | Sort Status | Personal Details | Personal Details Bangla | Video URL | Manual Rating | Public Rating Cache | Public Rating Count | Admin Status | Favorites`
 
 - `Social Media URL` — optional. One or more links (Facebook, YouTube, TikTok, Google Maps, a website, etc.) separated by a new line or `, `; shown as icon buttons on the driver/doctor detail page. Leave it empty and nothing is shown.
 - `Admin Status` — `TRUE` gives that driver access to Admin Mode (after logging in and re-entering their password). It can only be set here, directly in the sheet — it can never be changed from the website. Leave it empty or `FALSE` for every normal driver.
@@ -236,6 +236,10 @@ automatically by the backend when first needed — see below:
 - `Status` = `Active` to make the driver eligible to appear publicly at all.
 - `Availability` = `Active` or `Inactive` — this is the flag the driver controls from their own profile.
 - `Personal Details` — shown as its own "Personal Details" section right after the Photo Gallery on the driver's detail page. Plain text is shown as plain text; you can also use basic HTML (`<h3>`, `<b>`, `<strong>`, `<p>`, `<ul>`, `<li>`, etc.) and it renders formatted, exactly as written. Leave it empty and the whole section — heading included — doesn't appear at all.
+  - **Fill-in placeholders · স্বয়ংক্রিয় তথ্য:** write `{{Name}}`, `{{Bengali Name}}`, `{{Phone}}`, `{{Full Address}}` (and the other profile fields: `Father/Husband Name`, `Alternative Phone`, `WhatsApp`, `Village`, `Post Office`, `Union`, `Upazila`, `District`, `Vehicle Number`, `Service Area`, `Driving Experience`, `Qualification`, `Extra 1`–`Extra 4`, `Social Media URL`) anywhere in the text and the site fills in that profile's own value — so the name, address and number never have to be typed twice and always stay current. An unknown placeholder name shows nothing.
+- `Personal Details Bangla` — the same as `Personal Details`, shown in বাংলা mode. Leave it empty and the English `Personal Details` text is used.
+- `Service Area Bangla` / `Experience Bangla` — the বাংলা versions of `Service Area` and `Driving Experience`, shown in বাংলা mode. Leave one empty and the English value is used.
+- `Favorites` — filled in automatically with the profile IDs a logged-in user saved with the heart (see §5.10). **Do not edit by hand.**
 - `Video URL` — shown as its own "Video" section, right after the Rating/Reviews section. A YouTube link plays in an embedded YouTube player; a Google Drive video link plays via Drive's own preview player. Leave it empty, or if the link doesn't actually work, the whole section — heading included — doesn't appear at all.
 - `Manual Rating` — the admin's own rating input, 0–5. Combines with verified public reviews below to make up the driver's displayed Rating (see "Public Ratings" further down): `Final Rating = MIN(Public Rating Cache + Manual Rating, 5)`. Leave empty for 0.
 - `Public Rating Cache` / `Public Rating Count` — **do not edit these by hand** — they're the average and count of that driver's VERIFIED public reviews, kept up to date automatically (see "Public Ratings" below) whenever you mark a review Verified. Leave both empty (they'll read as 0) until the driver has at least one verified review.
@@ -258,14 +262,17 @@ Column headers ahead of time if you prefer.
 
 **My Profile (driver-side)**
 A logged-in driver's own "My Profile" page (Change Password + a
-"Edit Profile" action) writes back to their SAME row on `Users` —
-still no separate account sheet. Only a small, fixed set of columns are
-ever editable this way: `Name`, `Bengali Name`, `Father/Husband Name`,
-`Alternative Phone`, `WhatsApp`, `Village`, `Post Office`, `Union`,
-`Upazila`, `District`, `Full Address`, `Service Area`, `Vehicle Number`,
-`Driving Experience`, `Qualification`, `Extra 1`–`Extra 4`, and
-`Password` (via Change Password, after the current password is
-verified). `Name` and `Bengali Name` are required in the edit form, as they
+"Edit Profile" action). **Edits are no longer written straight to `Users`:
+saving sends the changes to an admin for approval** (see "Pending Profile
+Edits" below); the profile keeps showing the old values until an admin
+confirms. Only a small, fixed set of columns can ever be edited this way:
+`Name`, `Bengali Name`, `Father/Husband Name`, `Alternative Phone`,
+`WhatsApp`, `Village`, `Post Office`, `Union`, `Upazila`, `District`,
+`Full Address`, `Service Area`, `Service Area Bangla`, `Vehicle Number`,
+`Driving Experience`, `Experience Bangla`, `Qualification`,
+`Extra 1`–`Extra 4` and `Social Media URL`. `Password` is the one exception —
+Change Password still applies immediately, after the current password is
+verified. `Name` and `Bengali Name` are required in the edit form, as they
 are at registration; an empty name is never saved. Everything else shown on
 the profile — `Phone`, `Username`, `Vehicle Type`, `Bazar`, both photo
 URLs, `Status`, and `Availability` (which has its own dedicated
@@ -273,6 +280,17 @@ toggle) — stays read-only there by design; see `updateProfile()` /
 `changePassword()` in `Code.gs`. As with Availability, the row to
 change is always located by the Driver ID tied to the caller's own
 session token, never a value the client sends directly.
+
+**Pending Profile Edits**
+`Driver ID | Name | Submitted Date | Changes`
+
+Created automatically the first time a user sends an edit — you don't need
+to create it yourself. One row per user: it holds only the fields that
+user asked to change (`Changes` is machine-written text — **do not edit it by
+hand**). While a request is waiting, the user sees a note that it is waiting
+for approval, and saving again replaces the waiting request. Admins handle
+these requests from **User Edit Confirm** in the Admin Dashboard (see "Admin
+Mode" below); once confirmed or cancelled, the row is removed.
 
 **Pending Users**
 Same idea as Users (including `Social Media URL`), plus `Application ID`,
@@ -326,10 +344,18 @@ use a link or PIN" option), (2) social media links, (3) other photos
 Created automatically the first time an admin saves a change in Admin Mode
 — you don't need to create it yourself. One row per real change (plus one
 row per approved pending application and one row per review set to `TRUE`
-from Public Rating): who changed it, when (Bangladesh
+from Public Rating, plus one row for every user edit request an admin confirms **or cancels**): who changed it, when (Bangladesh
 time), which Driver/Doctor/Pending/Rating record, and each changed field as an
 `Old n` / `New n` pair. The `Old`/`New` columns are added automatically as
 needed. Passwords are never written here — only "hidden" → "changed".
+
+For a **user edit request** the row's `Target Type` is `User Edit`, and `Target ID` /
+`Target Name` are the user who sent the request; `Admin Driver ID` / `Admin Name`
+are the admin who handled it. Each field the admin applied is written as a normal
+`Old n` / `New n` pair. Each field the admin did **not** apply (**Reject whole
+edit**, or **Keep old** on a field) is written with the old value in `Old n` and the
+requested value in `New n` followed by `(Cancelled)`. If the request held nothing to
+compare, the row simply reads `Edit request` → `Cancelled`.
 
 The backend also auto-creates a `Sessions` tab the first time someone logs
 in — you don't need to create it yourself, and you never need to look at
@@ -343,7 +369,7 @@ Dashboard** card on their profile. The **Admin Mode** switch asks for the
 login password again, then stays on for a limited time (adjustable with
 the `-10m / -30m / -1h / +10m / +30m / +1h` buttons). Every admin action is
 re-checked on the server (session, `Admin Status` and the admin-mode
-token). Three buttons appear while Admin Mode is on:
+token). These buttons appear while Admin Mode is on:
 
 - **Add User** — opens the registration form.
 - **Public Rating** — lists every review whose `Verified` is not `TRUE`
@@ -354,8 +380,14 @@ token). Three buttons appear while Admin Mode is on:
   reject button — a review that is not approved simply stays `FALSE`.
 - **Pending Users** — lists new registrations; each can be edited or
   approved with **OK**.
+- **User Edit Confirm** — lists the profile edits users have sent (see "Pending
+  Profile Edits" above), one card per user with every requested change shown as
+  *Old → New*. The admin can change a new value, press **Keep old** on a field to
+  leave it unchanged, then **Save** to apply the rest — or press **Reject whole
+  edit** (tap twice to confirm) to throw the whole request away. Either way the
+  action is written to `Admin Editor History`.
 
-The Public Rating and Pending Users buttons show a small red count of
+The Public Rating, Pending Users and User Edit Confirm buttons show a small red count of
 waiting items. The count refreshes when the dashboard opens, every 60
 seconds while it is on screen, when the app comes back to the foreground,
 and immediately after an item is approved. It is hidden when the count is 0.
@@ -463,7 +495,7 @@ the other lists.
   background and never delay the text; Drive pictures are kept in the
   browser's photo cache. Recommended: JPG, roughly 2:1, compressed.
 - A home notice's `link` can be a normal web address (opens in a new tab) or
-  `#/driver/<Driver ID>` (e.g. `#/driver/D1264`): the profile card then opens
+  `#/user/<Driver ID>` (e.g. `#/user/D1264`; the older `#/driver/<Driver ID>` form still works): the profile card then opens
   over the page you are on, without reloading the app, and the Back button
   returns to the same place.
 - Notice animation: a coloured light runs once around the header's border every
@@ -479,7 +511,7 @@ the other lists.
 - To add a category such as Shop, add a row in the category sheet
   (`All Categories`) with `Other Categories` = TRUE.
   English Names used by the home cards: `Shop`, `Mosque & Madrasa`,
-  `Notable People`, `Sports`, `School & College`.
+  `Notable People`, `Sports`, `School & College`, `Union Parishad`.
 
 ### 3.8 Doctors by category, extra columns and renamed sheets
 
@@ -705,6 +737,32 @@ address. See the README inside each folder for details.
 
 ---
 
+## 5.10 Favorites, share links & PIN-locked profiles
+
+**Favorites · সেভ করা প্রোফাইল**
+
+- A heart next to a name (on cards and on the details page) saves that profile; the **Favorites** page (`#/favorites`) lists them.
+- Saved on the visitor's own phone. When the visitor is logged in, the list is also kept in the `Favorites` column of their `Users` row, so it follows them to another phone (up to 500 profiles; `getFavorites()` / `saveFavorites()` in `Code.gs`, always located by the caller's own session token).
+
+**Share link · শেয়ার লিংক**
+
+- The share button on the details page now builds the link from the profile's **user ID**: `#/user/<ID>` (e.g. `#/user/D1264`).
+- Old links in the form `#/driver/<ID>` keep working, so printed QR codes and earlier shares are not broken.
+
+**PIN-locked profiles · পিন-লক করা প্রোফাইল**
+
+A profile whose ID starts with `DX` followed by a number (e.g. `DX12`) is locked. IDs starting with `D`, `DR`, `AD` and so on are not affected.
+
+- Its card shows everywhere as usual (lists, search, favorites); only the **details page** is locked. Tapping the card — or opening its share link — first asks for a PIN.
+- The PIN is today's date as `DDMMYY` (for example `231026`) — the same PIN that Registration Step 3 uses for the photo option. A wrong PIN shows *Invalid PIN / ভুল পিন*; a correct one opens the details. The PIN is asked every time.
+- The PIN box shows only "Enter PIN / পিন দিন" — it does not say what the lock is for.
+- Front end only — nothing to set up in the Google Sheet or in `Code.gs`. The code is `isPinLockedDriver()` / `openPinGate()` in `js/drivers.js`.
+
+> [!WARNING]
+> This is a **light lock**, not real security. The check runs in the visitor's browser and the PIN rule is visible in the site's code, so it stops casual visitors only; a technically skilled person can still reach the data. Do not rely on it for anything truly private.
+
+---
+
 ## 6. Known limitations
 
 - Google Sheets is a lightweight, convenient store for a small local
@@ -734,6 +792,7 @@ address. See the README inside each folder for details.
   listed in `publicDriverFields()` in both `js/api.js` (demo mode) and
   `google-apps-script/Code.gs` (real mode) — the `Users` sheet and the
   `Pending Users` sheet are never exposed to normal visitors.
+- The PIN on `DX` profiles (§5.10) is checked in the browser only, so it is a light lock, not a security feature.
 - This is a practical, appropriate level of security for a small community
   tool — it is not a claim of bank-level security.
 
@@ -857,6 +916,12 @@ The Android app is a **Trusted Web Activity (TWA)** built with [PWABuilder](http
 - [x] Android APK (v1.0.0) built, signed and published on GitHub Releases
 - [x] Domain-root repository with `assetlinks.json`
 - [x] Maskable app icon added
+- [x] Favorites system (heart button, Favorites page, saved to the account when logged in)
+- [x] Share links use the user ID (`#/user/<ID>`); old `#/driver/<ID>` links still work
+- [x] `Personal Details` fill-in placeholders (name, address, number …) and a Bangla version
+- [x] User profile edits now need admin approval (**User Edit Confirm**), with confirmed and cancelled requests both logged in `Admin Editor History`
+- [x] New Bangla columns in `Users` (`Service Area Bangla`, `Experience Bangla`, `Personal Details Bangla`) and the `Favorites` column
+- [x] PIN lock on `DX` profiles (§5.10)
 
 ### 10.3 💡 Ideas / later
 

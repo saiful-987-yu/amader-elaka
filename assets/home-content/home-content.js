@@ -61,57 +61,57 @@
 */
 window.HOME_NOTICES = [
   {
-    titleEn: "Welcome to Amader Elaka (a New App)",
-    titleBn: "আমাদের এলাকায় স্বাগতম",
-    textEn: "Drivers, আজকের ইফতার: [[timer:2027-02-20 17:52]] doctors and more of your area are being added step by step. Check back often.",
-    textBn: "আপনার এলাকার ড্রাইভার, আজকের ইফতার: [[timer:2027-02-20 17:52]] ডাক্তারসহ আরও অনেক তথ্য ধাপে ধাপে যুক্ত হচ্ছে। নিয়মিত দেখুন।",
+    titleEn: "✨ Welcome to Amader Elaka 🏡",
+    titleBn: "✨ 'আমাদের এলাকা' অ্যাপে আপনাকে স্বাগতম 🏡",
+    textEn: "Welcome to our platform! 🚀 Find drivers, doctors, and essential local services right at your fingertips. 📲 Scroll down now to explore all services and contacts! 👇✨",
+    textBn: "আমাদের প্ল্যাটফর্মে আপনাকে স্বাগতম! 🚀 এখন আপনার এলাকার ড্রাইভার, ডাক্তারসহ যাবতীয় প্রয়োজনীয় সেবা পেয়ে যাবেন হাতের নাগালেই। 📲 প্রয়োজনীয় সেবা পেতে এখনই নিচে দেখুন! 👇✨",
     date: "",
     urgent: false,
     link: "",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {
-    titleEn: "Follow our Facebook page",
-    titleBn: "আমাদের ফেসবুক পেজ ফলো করুন",
-    textEn: "A Facebook page has been opened in the name of Amader Elaka. Follow it to get new notices, news and updates first, and tell your friends too.",
-    textBn: "আমাদের এলাকা নামে একটি ফেসবুক পেজ খোলা হয়েছে। নতুন নোটিশ, খবর ও আপডেট সবার আগে পেতে পেজটি ফলো করুন এবং বন্ধুদের জানান।",
-    date: "",
-    urgent: false,
-    link: "https://www.facebook.com/REPLACE-WITH-PAGE-LINK",
+    titleEn: "✨ Holy Shab-e-Meraj Notice 🌙",
+    titleBn: "✨ পবিত্র শবে মেরাজ বিজ্ঞপ্তি 🌙",
+    textEn: "The holy Shab-e-Meraj will be observed on Tuesday night, January 5, 2027. Time remaining: [[timer:2027-01-05 17:45]]. 🤲 May this blessed night bring endless peace, divine blessings, and forgiveness to everyone. 🤍",
+    textBn: "আগামী ৫ জানুয়ারি, ২০২৭ মঙ্গলবার রাতে পবিত্র শবে মেরাজ পালিত হবে। 🌙 বরকতময় এই রাত আসতে আর মাত্র: [[timer:2027-01-05 17:45]] বাকি। 🤲 পবিত্র এই রাতে সবার সর্বাঙ্গীন মঙ্গল, শান্তি ও ক্ষমা প্রার্থনা করছি। 🤍",
+    date: "05-01-2027",
+    urgent: true,
+    link: "https://www.facebook.com/share/v/1FNbv5gDST/",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {
-    titleEn: "Bloodless circumcision with a machine",
-    titleBn: "মেশিনের সাহায্যে রক্তপাতহীন মুসলমানি",
-    textEn: "A doctor in our area performs circumcision (Musalmani) with a machine, with no bleeding. See the doctor's profile for details and contact.",
-    textBn: "আমাদের এলাকায় একজন ডাক্তার আছেন, যিনি মেশিনের সাহায্যে মুসলমানি (খতনা) করান, এতে কোনো রক্তপাত হয় না। বিস্তারিত ও যোগাযোগের জন্য ডাক্তারের প্রোফাইল দেখুন।",
+    titleEn: "🩸 Modern Bloodless Circumcision 🩺",
+    titleBn: "🩺 আধুনিক মেশিনের সাহায্যে রক্তপাতহীন খতনা ✨",
+    textEn: "Dr. Sala Uddin at Bangla Bazar performs safe circumcision using a digital machine with no bleeding, no stitches, and no bandages. 🩹✨ Check the doctor's profile for full details and contact info.",
+    textBn: "বাংলা বাজারের ছালা উদ্দিন ডাক্তার এখন ডিজিটাল মেশিনের সাহায্যে সম্পূর্ণ রক্তপাতহীন, সেলাই ও ব্যান্ডেজবিহীন আধুনিক পদ্ধতিতে মুসলমানি (খতনা) করান। 🩺✨ বিস্তারিত জানতে ও যোগাযোগের জন্য ডাক্তারের প্রোফাইলটি দেখে নিন। 📱",
     date: "",
     urgent: false,
     link: "#/driver/DR1213",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {
-    titleEn: "Saiful Tournament",
-    titleBn: "সাইফুল টুর্নামেন্ট",
-    textEn: "A big tournament, the Saiful Tournament, will be held in our area on Wednesday, 21 October 2026. Everyone is welcome to come and enjoy. Tap the button to see the venue on the map.",
-    textBn: "বুধবার, ২১ অক্টোবর ২০২৬ তারিখে আমাদের এলাকায় বড় আকারের সাইফুল টুর্নামেন্ট অনুষ্ঠিত হবে। সবাই আমন্ত্রিত, এসে খেলা উপভোগ করুন। স্থান দেখতে নিচের বাটনে চাপুন।",
-    date: "বুধবার, ২১ অক্টোবর ২০২৬",
+    titleEn: "🗳️ Choose Qualified & Honest Leaders 🤝",
+    titleBn: "🗳️ যোগ্য ও সৎ জনপ্রতিনিধি নির্বাচন করুন 🤝",
+    textEn: "Upcoming local elections are around the corner! 🗳️ Since Union Members and Chairmen are the pillars of local development, choose based on personal character and qualifications, not party lines. ✨ Elect honest candidates to ensure true progress for our area. 🏡🙌",
+    textBn: "আর কিছুদিন পরেই আসছে স্থানীয় মেম্বার ও চেয়ারম্যান নির্বাচন! 🗳️ যেহেতু মেম্বার ও চেয়ারম্যানগণ আমাদের এলাকার উন্নয়নের মূল ভিত্তি, তাই দল না দেখে প্রার্থীর সততা, মেধা ও গুণাবলী বিবেচনা করুন। ✨ এলাকার সঠিক উন্নয়নের জন্য যোগ্য মানুষকে ভোট দিয়ে জয়যুক্ত করুন। 🏡🙌",
+    date: "",
     urgent: false,
-    link: "https://www.google.com/maps/search/?api=1&query=REPLACE-WITH-TOURNAMENT-LOCATION",
+    link: "https://www.facebook.com/share/1DmGpfAYn6/",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
-  }
+  },
 ];
 
 window.HOME_CATEGORIES = [
-  { id: "drivers",   icon: "🚗", en: "Drivers",                bn: "ড্রাইভার",                  type: "drivers" },
-  { id: "doctor",    icon: "🩺", en: "Doctors",                bn: "ডাক্তার",                   type: "doctor" },
-  { id: "emergency", icon: "🚑", en: "Emergency",              bn: "জরুরি সেবা",                type: "emergency" },
-  { id: "shop",      icon: "🛒", en: "Shops & Business",       bn: "দোকান ও ব্যবসা",            type: "other", slug: "shop" },
-  { id: "mosque",    icon: "🕌", en: "Mosque & Madrasa",       bn: "মসজিদ ও মাদ্রাসা",          type: "other", slug: "mosque-madrasa" },
-  { id: "notable",   icon: "🌟", en: "Notable People",         bn: "সুনামধন্য ব্যক্তি",         type: "other", slug: "notable-people" },
-  { id: "sports",    icon: "⚽", en: "Sports & Tournaments",   bn: "খেলাধুলা ও টুর্নামেন্ট",    type: "other", slug: "sports" },
-  { id: "education", icon: "🏫", en: "School & College",       bn: "স্কুল ও কলেজ",              type: "other", slug: "school-college" },
-  { id: "other",     icon: "➕", en: "Others",                 bn: "অন্যান্য",                  type: "otherAll" }
+  { id: "drivers",   icon: "🚗", en: "Drivers",                bn: "ড্রাইভার",             type: "drivers" },
+  { id: "doctor",    icon: "🩺", en: "Doctors",                bn: "ডাক্তার",              type: "doctor" },
+  { id: "emergency", icon: "🚑", en: "Emergency",              bn: "জরুরি সেবা",          type: "emergency" },
+  { id: "shop",      icon: "🛒", en: "Shops & Business",       bn: "দোকান ও ব্যবসা",       type: "other", slug: "shop" },
+  { id: "mosque",    icon: "🕌", en: "Mosque & Madrasa",       bn: "মসজিদ ও মাদ্রাসা",      type: "other", slug: "mosque-madrasa" },
+  { id: "education", icon: "🏫", en: "School & College",       bn: "স্কুল ও কলেজ",         type: "other", slug: "school-college" },
+  { id: "government", icon: "🧑‍✈️", en: "Union Parishad",        bn: "ইউনিয়ন পরিষদ",        type: "other", slug: "union-parishad" },
+  { id: "sports",    icon: "⚽", en: "Sports & Tournaments",   bn: "খেলাধুলা ও টুর্নামেন্ট",     type: "other", slug: "sports" },
+  { id: "other",     icon: "➕", en: "Others",                 bn: "অন্যান্য",               type: "otherAll" }
 ];
 
 window.CATEGORY_EXTRA_FIELDS = {

@@ -11,6 +11,7 @@ const SHEET_VEHICLES = "All Categories";
 const SHEET_SESSIONS = "Sessions";
 const SHEET_RATINGS = "Public Ratings";
 const SHEET_ADMIN_HISTORY = "Admin Editor History";
+const SHEET_PROFILE_EDITS = "Pending Profile Edits";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 const SESSION_RENEW_AFTER_MS = 1000 * 60 * 60 * 24;
@@ -18,6 +19,32 @@ const DOCTOR_CATEGORY_SLUG = "doctor";
 const DATE_FORMAT = "dd-MM-yy HH:mm";
 const DATE_TIMEZONE = "Asia/Dhaka";
 const TEXT_DATE_HEADERS = ["Created Date", "Updated Date", "Submitted Date", "Date Time", "Expires At"];
+const PLACEHOLDER_HEADERS = ["Name", "Bengali Name", "Father/Husband Name", "Phone", "Alternative Phone", "WhatsApp", "Village", "Post Office", "Union", "Upazila", "District", "Full Address", "Vehicle Number", "Service Area", "Service Area Bangla", "Driving Experience", "Experience Bangla", "Qualification", "Extra 1", "Extra 2", "Extra 3", "Extra 4", "Social Media URL"];
+const MAX_FAVORITES = 500;
+const PROFILE_EDIT_FIELDS = {
+name: "Name",
+nameBn: "Bengali Name",
+guardianName: "Father/Husband Name",
+village: "Village",
+postOffice: "Post Office",
+union: "Union",
+upazila: "Upazila",
+district: "District",
+fullAddress: "Full Address",
+experience: "Driving Experience",
+experienceBn: "Experience Bangla",
+altPhone: "Alternative Phone",
+whatsapp: "WhatsApp",
+serviceArea: "Service Area",
+serviceAreaBn: "Service Area Bangla",
+vehicleNumber: "Vehicle Number",
+qualification: "Qualification",
+extra1: "Extra 1",
+extra2: "Extra 2",
+extra3: "Extra 3",
+extra4: "Extra 4",
+socialUrl: "Social Media URL"
+};
 
 const HEADER_ALIASES = {
 "Profile ID": "Driver ID",
@@ -61,6 +88,8 @@ case "getProfile": return respond({ ok: true, result: getProfile(payload) });
 case "updateAvailability": return respond({ ok: true, result: updateAvailability(payload) });
 case "updateProfile": return respond({ ok: true, result: updateProfile(payload) });
 case "changePassword": return respond({ ok: true, result: changePassword(payload) });
+case "getFavorites": return respond({ ok: true, result: getFavorites(payload) });
+case "saveFavorites": return respond({ ok: true, result: saveFavorites(payload) });
 case "getPublicRatings": return respond({ ok: true, result: getPublicRatings(payload) });
 case "submitPublicRating": return respond({ ok: true, result: submitPublicRating(payload) });
 case "adminEnableMode": return respond({ ok: true, result: adminEnableMode(payload) });
@@ -75,6 +104,8 @@ case "adminApprovePending": return respond({ ok: true, result: adminApprovePendi
 case "adminListPendingRatings": return respond({ ok: true, result: adminListPendingRatings(payload) });
 case "adminApproveRating": return respond({ ok: true, result: adminApproveRating(payload) });
 case "adminPendingCounts": return respond({ ok: true, result: adminPendingCounts(payload) });
+case "adminListProfileEdits": return respond({ ok: true, result: adminListProfileEdits(payload) });
+case "adminResolveProfileEdit": return respond({ ok: true, result: adminResolveProfileEdit(payload) });
 default: return respond({ ok: false, errorCode: "UNKNOWN_OPERATION" });
 }
 } catch (err) {
@@ -253,6 +284,20 @@ function finalRatingValue(r) {
 return Math.min(publicRatingCacheValue(r) + manualRatingValue(r), 5);
 }
 
+function escapeHtml(v) {
+return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function renderPersonalDetails(rawHtml, row) {
+const text = clean(rawHtml);
+if (!text) return "";
+return text.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (match, name) {
+const wanted = normHeader(name).toLowerCase();
+const header = PLACEHOLDER_HEADERS.filter(function (h) { return h.toLowerCase() === wanted; })[0];
+return header ? escapeHtml(clean(row[header])) : "";
+});
+}
+
 function publicDriverFields(r) {
 return {
 driverId: clean(r["Driver ID"]),
@@ -264,7 +309,9 @@ vehicleType: slugifyMulti(r["Vehicle Type"]),
 vehicleNumber: clean(r["Vehicle Number"]),
 marketSlug: slugifyMulti(r["Bazar"]),
 serviceArea: clean(r["Service Area"]),
+serviceAreaBn: clean(r["Service Area Bangla"]),
 experience: clean(r["Driving Experience"]),
+experienceBn: clean(r["Experience Bangla"]),
 rating: clean(r["Star Rating"]),
 whatsapp: clean(r["WhatsApp"]),
 imageUrl: clean(r["Driver Image URL"]),
@@ -278,7 +325,8 @@ extra2: clean(r["Extra 2"]),
 extra3: clean(r["Extra 3"]),
 extra4: clean(r["Extra 4"]),
 sortStatus: clean(r["Sort Status"]),
-personalDetails: clean(r["Personal Details"]),
+personalDetails: renderPersonalDetails(r["Personal Details"], r),
+personalDetailsBn: renderPersonalDetails(r["Personal Details Bangla"], r),
 videoUrl: clean(r["Video URL"]),
 socialUrl: clean(r["Social Media URL"]),
 publicRating: publicRatingCacheValue(r),
@@ -372,6 +420,10 @@ if (existing.hasNext()) return existing.next();
 return DriveApp.createFolder(DRIVER_PHOTOS_FOLDER_NAME);
 }
 
+function safeFilePart(v, max) {
+return clean(v).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, max);
+}
+
 function uploadDriverPhoto(payload) {
 const base64Data = String(payload.imageBase64 || "");
 const mimeType = String(payload.mimeType || "");
@@ -387,7 +439,8 @@ throw appError("VALIDATION_FAILED");
 if (bytes.length < MIN_PHOTO_BYTES || bytes.length > MAX_PHOTO_BYTES) throw appError("VALIDATION_FAILED");
 
 const extension = mimeType.split("/")[1] || "jpg";
-const fileName = "driver-photo-" + new Date().getTime() + "." + extension;
+const nameParts = [safeFilePart(payload.name, 40), String(payload.phone || "").replace(/\D/g, "").slice(0, 15)].filter(Boolean);
+const fileName = (nameParts.length ? nameParts.join("_") : "driver-photo") + "_" + Utilities.formatDate(new Date(), DATE_TIMEZONE, "yyMMdd-HHmmss") + "." + extension;
 const blob = Utilities.newBlob(bytes, mimeType, fileName);
 const folder = ensureDriverPhotosFolder();
 const file = folder.createFile(blob);
@@ -422,7 +475,7 @@ throw appError("INVALID_CREDENTIALS");
 
 const driverId = clean(driverRow["Driver ID"]);
 const token = createSession(driverId);
-return { token, driver: driverProfileFields(driverRow) };
+return { token, driver: Object.assign(driverProfileFields(driverRow), { pendingEdit: pendingEditFor(driverId) }) };
 }
 
 function driverProfileFields(row) {
@@ -549,7 +602,7 @@ function getProfile(payload) {
 const driverId = resolveSession(payload.token);
 const driverRow = readRows(SHEET_DRIVERS).find((r) => clean(r["Driver ID"]) === driverId);
 if (!driverRow) throw appError("SESSION_EXPIRED");
-return driverProfileFields(driverRow);
+return Object.assign(driverProfileFields(driverRow), { pendingEdit: pendingEditFor(driverId) });
 }
 
 function writeDriverRow(driverId, updates) {
@@ -577,34 +630,142 @@ return driverProfileFields(driverRow);
 
 function updateProfile(payload) {
 const driverId = resolveSession(payload.token);
-const fieldMap = {
-name: "Name",
-nameBn: "Bengali Name",
-guardianName: "Father/Husband Name",
-village: "Village",
-postOffice: "Post Office",
-union: "Union",
-upazila: "Upazila",
-district: "District",
-fullAddress: "Full Address",
-experience: "Driving Experience",
-altPhone: "Alternative Phone",
-whatsapp: "WhatsApp",
-serviceArea: "Service Area",
-vehicleNumber: "Vehicle Number",
-qualification: "Qualification",
-extra1: "Extra 1",
-extra2: "Extra 2",
-extra3: "Extra 3",
-extra4: "Extra 4"
-};
 const updates = {};
-Object.keys(fieldMap).forEach((key) => {
-if (payload[key] !== undefined) updates[fieldMap[key]] = clean(payload[key]);
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+if (payload[key] !== undefined) updates[PROFILE_EDIT_FIELDS[key]] = clean(payload[key]);
 });
 if (!Object.keys(updates).length || updates["Name"] === "") throw appError("VALIDATION_FAILED");
-const driverRow = writeDriverRow(driverId, updates);
-return driverProfileFields(driverRow);
+const lock = LockService.getScriptLock();
+lock.waitLock(20000);
+let driverRow = null;
+let hasChanges = false;
+try {
+dropRowMemo();
+driverRow = readRows(SHEET_DRIVERS).find((r) => clean(r["Driver ID"]) === driverId);
+if (!driverRow) throw appError("SESSION_EXPIRED");
+const existing = pendingEditFor(driverId);
+const changes = {};
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+const header = PROFILE_EDIT_FIELDS[key];
+if (updates[header] !== undefined) {
+if (updates[header] !== clean(driverRow[header])) changes[header] = updates[header];
+} else if (existing[key] !== undefined) {
+changes[header] = existing[key];
+}
+});
+hasChanges = Object.keys(changes).length > 0;
+if (hasChanges) saveProfileEdit(driverId, clean(driverRow["Name"]), changes);
+else deleteProfileEdit(driverId);
+} finally {
+lock.releaseLock();
+}
+return Object.assign(driverProfileFields(driverRow), { pendingApproval: hasChanges, pendingEdit: pendingEditFor(driverId) });
+}
+
+function ensureProfileEditsSheet() {
+const ss = SpreadsheetApp.getActiveSpreadsheet();
+if (!ss.getSheetByName(SHEET_PROFILE_EDITS)) {
+const s = ss.insertSheet(SHEET_PROFILE_EDITS);
+s.appendRow(["Driver ID", "Name", "Submitted Date", "Changes"]);
+}
+}
+
+function profileEditRows() {
+if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILE_EDITS)) return [];
+return readRows(SHEET_PROFILE_EDITS);
+}
+
+function parseEditChanges(row) {
+let raw = {};
+try { raw = JSON.parse(clean(row["Changes"])) || {}; } catch (err) { raw = {}; }
+const allowed = Object.keys(PROFILE_EDIT_FIELDS).map((k) => PROFILE_EDIT_FIELDS[k]);
+const out = {};
+Object.keys(raw).forEach((header) => {
+if (allowed.indexOf(header) !== -1) out[header] = clean(raw[header]);
+});
+return out;
+}
+
+function pendingEditFor(driverId) {
+const out = {};
+const row = profileEditRows().find((r) => clean(r["Driver ID"]) === clean(driverId));
+if (!row) return out;
+const changes = parseEditChanges(row);
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+if (changes[PROFILE_EDIT_FIELDS[key]] !== undefined) out[key] = changes[PROFILE_EDIT_FIELDS[key]];
+});
+return out;
+}
+
+function saveProfileEdit(driverId, name, changes) {
+ensureProfileEditsSheet();
+const s = sheet(SHEET_PROFILE_EDITS);
+const values = s.getDataRange().getValues();
+const headers = values[0].map(normHeader);
+const idCol = headers.indexOf("Driver ID");
+if (idCol === -1) throw appError("SHEET_MISCONFIGURED");
+const record = { "Name": name, "Submitted Date": nowText(), "Changes": JSON.stringify(changes) };
+for (let i = 1; i < values.length; i++) {
+if (clean(values[i][idCol]) === driverId) {
+writeCells(s, i + 1, headers, record);
+return;
+}
+}
+record["Driver ID"] = driverId;
+appendRow(SHEET_PROFILE_EDITS, record);
+}
+
+function deleteProfileEdit(driverId) {
+if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILE_EDITS)) return;
+const s = sheet(SHEET_PROFILE_EDITS);
+const values = s.getDataRange().getValues();
+const idCol = values[0].map(normHeader).indexOf("Driver ID");
+if (idCol === -1) return;
+for (let i = values.length - 1; i >= 1; i--) {
+if (clean(values[i][idCol]) === clean(driverId)) s.deleteRow(i + 1);
+}
+dropRowMemo();
+}
+
+function cleanFavorites(list) {
+const seen = {};
+const out = [];
+list.forEach(function (v) {
+const id = clean(v);
+const key = id.toLowerCase();
+if (!/^[A-Za-z0-9_\-]{1,40}$/.test(id) || seen[key]) return;
+seen[key] = true;
+out.push(id);
+});
+return out.slice(0, MAX_FAVORITES);
+}
+
+function getFavorites(payload) {
+const driverId = resolveSession(payload.token);
+const row = readRows(SHEET_DRIVERS).find((r) => clean(r["Driver ID"]) === driverId);
+if (!row) throw appError("SESSION_EXPIRED");
+if (row["Favorites"] === undefined) return { favorites: null };
+return { favorites: cleanFavorites(String(row["Favorites"]).split(/[,\n]+/)) };
+}
+
+function saveFavorites(payload) {
+const driverId = resolveSession(payload.token);
+if (!Array.isArray(payload.favorites)) throw appError("VALIDATION_FAILED");
+const list = cleanFavorites(payload.favorites);
+const s = sheet(SHEET_DRIVERS);
+const values = s.getDataRange().getValues();
+const headers = values[0].map(normHeader);
+const idCol = headers.indexOf("Driver ID");
+const favCol = headers.indexOf("Favorites");
+if (idCol === -1 || favCol === -1) throw appError("SHEET_MISCONFIGURED");
+for (let i = 1; i < values.length; i++) {
+if (clean(values[i][idCol]) === driverId) {
+s.getRange(i + 1, favCol + 1).setNumberFormat("@").setValue(list.join(", "));
+dropRowMemo();
+return { favorites: list };
+}
+}
+throw appError("SESSION_EXPIRED");
 }
 
 function changePassword(payload) {
@@ -809,6 +970,7 @@ const ADMIN_TEXT_COLUMNS_COMMON = {
 name: "Name", nameBn: "Bengali Name", phone: "Phone", altPhone: "Alternative Phone",
 whatsapp: "WhatsApp", vehicleType: "Vehicle Type", vehicleNumber: "Vehicle Number",
 serviceArea: "Service Area", experience: "Driving Experience",
+serviceAreaBn: "Service Area Bangla", experienceBn: "Experience Bangla",
 imageUrl: "Driver Image URL", vehicleImageUrl: "Vehicle Image URL", socialUrl: "Social Media URL",
 qualification: "Qualification",
 extra1: "Extra 1", extra2: "Extra 2", extra3: "Extra 3", extra4: "Extra 4"
@@ -819,7 +981,7 @@ upazila: "Upazila", district: "District", fullAddress: "Full Address", bazar: "B
 };
 const ADMIN_MANAGED_COLUMNS = {
 status: "Status", availability: "Availability", starRating: "Star Rating", manualRating: "Manual Rating",
-personalDetails: "Personal Details", videoUrl: "Video URL"
+personalDetails: "Personal Details", personalDetailsBn: "Personal Details Bangla", videoUrl: "Video URL"
 };
 const ADMIN_DRIVER_ONLY_MANAGED = { emergency: "Emergency Contact", sortStatus: "Sort Status" };
 
@@ -1100,7 +1262,7 @@ if (clean(r["Username"]).toLowerCase() === uname) throw appError("DUPLICATE_USER
 const carried = [
 "Name", "Bengali Name", "Father/Husband Name", "Phone", "Alternative Phone", "WhatsApp", "Village",
 "Post Office", "Union", "Upazila", "District", "Full Address", "Vehicle Type", "Vehicle Number", "Bazar",
-"Service Area", "Driving Experience", "Driver Image URL", "Vehicle Image URL", "Social Media URL", "Qualification", "Extra 1", "Extra 2", "Extra 3", "Extra 4", "Username", "Password"
+"Service Area", "Service Area Bangla", "Driving Experience", "Experience Bangla", "Driver Image URL", "Vehicle Image URL", "Social Media URL", "Qualification", "Extra 1", "Extra 2", "Extra 3", "Extra 4", "Username", "Password"
 ];
 const now = nowText();
 const newRow = {};
@@ -1215,7 +1377,88 @@ logAdminHistory(adminCtx, "Rating", entry.id, driverName ? driverName + " (" + e
 return { ok: true };
 }
 
+function profileEditItems() {
+const drivers = {};
+readRows(SHEET_DRIVERS).forEach((r) => { drivers[clean(r["Driver ID"])] = r; });
+const out = [];
+profileEditRows().forEach((r) => {
+const id = clean(r["Driver ID"]);
+const d = drivers[id];
+if (!d) return;
+const changes = parseEditChanges(r);
+const list = [];
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+const header = PROFILE_EDIT_FIELDS[key];
+if (changes[header] !== undefined && changes[header] !== clean(d[header])) {
+list.push({ key: key, oldValue: clean(d[header]), newValue: changes[header] });
+}
+});
+if (!list.length) return;
+out.push({
+driverId: id,
+name: clean(d["Name"]),
+nameBn: clean(d["Bengali Name"]),
+phone: clean(d["Phone"]),
+imageUrl: clean(d["Driver Image URL"]),
+submittedDate: dateText(r["Submitted Date"]),
+changes: list
+});
+});
+return out;
+}
+
+function adminListProfileEdits(payload) {
+requireAdminMode(payload);
+return profileEditItems();
+}
+
+function adminResolveProfileEdit(payload) {
+const adminCtx = requireAdminMode(payload);
+const driverId = clean(payload.id);
+if (!driverId) throw appError("VALIDATION_FAILED");
+const values = payload.values && typeof payload.values === "object" ? payload.values : {};
+const lock = LockService.getScriptLock();
+lock.waitLock(20000);
+const historyPairs = [];
+const cancelledPairs = [];
+let targetName = "";
+try {
+dropRowMemo();
+const editRow = profileEditRows().find((r) => clean(r["Driver ID"]) === driverId);
+if (!editRow) throw appError("NOT_FOUND");
+const driverRow = readRows(SHEET_DRIVERS).find((r) => clean(r["Driver ID"]) === driverId);
+if (!driverRow) throw appError("NOT_FOUND");
+const changes = parseEditChanges(editRow);
+const updates = {};
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+const header = PROFILE_EDIT_FIELDS[key];
+if (changes[header] === undefined || values[key] === undefined) return;
+const value = clean(values[key]);
+if (header === "Name" && value === "") throw appError("VALIDATION_FAILED");
+if (value !== clean(driverRow[header])) {
+updates[header] = value;
+historyPairs.push({ oldText: header + ": " + clean(driverRow[header]), newText: header + ": " + value });
+}
+});
+targetName = updates["Name"] !== undefined ? updates["Name"] : clean(driverRow["Name"]);
+Object.keys(PROFILE_EDIT_FIELDS).forEach((key) => {
+const header = PROFILE_EDIT_FIELDS[key];
+if (changes[header] !== undefined && changes[header] !== clean(driverRow[header]) && updates[header] === undefined) {
+cancelledPairs.push({ oldText: header + ": " + clean(driverRow[header]), newText: header + ": " + changes[header] + " (Cancelled)" });
+}
+});
+if (Object.keys(updates).length && !writeRowById(SHEET_DRIVERS, "Driver ID", driverId, updates)) throw appError("NOT_FOUND");
+deleteProfileEdit(driverId);
+} finally {
+lock.releaseLock();
+}
+const loggedPairs = historyPairs.concat(cancelledPairs);
+if (!loggedPairs.length) loggedPairs.push({ oldText: "Edit request", newText: "Cancelled" });
+logAdminHistory(adminCtx, "User Edit", driverId, targetName, loggedPairs);
+return { ok: true, applied: historyPairs.length };
+}
+
 function adminPendingCounts(payload) {
 requireAdminMode(payload);
-return { pendingUsers: readRows(SHEET_PENDING).length, pendingRatings: pendingRatingEntries().length };
+return { pendingUsers: readRows(SHEET_PENDING).length, pendingRatings: pendingRatingEntries().length, profileEdits: profileEditItems().length };
 }

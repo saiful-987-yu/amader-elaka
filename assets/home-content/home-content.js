@@ -13,6 +13,13 @@
     home-notice-01.jpg, home-notice-02.jpg ... (notice 1, notice 2 ... in the order written here) is used first;
     bgImage is used only when that file is not there.
 
+  LIVE COUNTDOWN INSIDE A HOME NOTICE (textEn / textBn)
+  - Write [[timer:YYYY-MM-DD HH:mm]] anywhere inside the text, 24-hour time, Bangladesh time. Example:
+    textBn: "আজকের ইফতার: [[timer:2027-02-20 17:52]]"
+  - It shows a live countdown (days only while at least one day is left, then hours:minutes and smaller seconds).
+    When the time is over it stays on screen as 00:00:00, struck through, in red with "সময় শেষ" / "Time's up".
+  - Works in the home notices only (not in CATEGORY_NOTICES). No backend or Google Sheet work is needed.
+
   CATEGORIES
   - type "drivers"   -> opens the driver flow of the chosen bazar
   - type "doctor"    -> opens the doctor list
@@ -56,8 +63,8 @@ window.HOME_NOTICES = [
   {
     titleEn: "Welcome to Amader Elaka (a New App)",
     titleBn: "আমাদের এলাকায় স্বাগতম",
-    textEn: "Drivers, doctors and more of your area are being added step by step. Check back often.",
-    textBn: "আপনার এলাকার ড্রাইভার, ডাক্তারসহ আরও অনেক তথ্য ধাপে ধাপে যুক্ত হচ্ছে। নিয়মিত দেখুন।",
+    textEn: "Drivers, আজকের ইফতার: [[timer:2027-02-20 17:52]] doctors and more of your area are being added step by step. Check back often.",
+    textBn: "আপনার এলাকার ড্রাইভার, আজকের ইফতার: [[timer:2027-02-20 17:52]] ডাক্তারসহ আরও অনেক তথ্য ধাপে ধাপে যুক্ত হচ্ছে। নিয়মিত দেখুন।",
     date: "",
     urgent: false,
     link: "",

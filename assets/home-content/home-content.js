@@ -62,9 +62,9 @@
 window.HOME_NOTICES = [
   {
     titleEn: "✨ Welcome to Amader Elaka 🏡",
-    titleBn: "✨ 'আমাদের এলাকা' অ্যাপে আপনাকে স্বাগতম 🏡",
-    textEn: "Welcome to our platform! 🚀 Find drivers, doctors, and essential local services right at your fingertips. 📲 Scroll down now to explore all services and contacts! 👇✨",
-    textBn: "আমাদের প্ল্যাটফর্মে আপনাকে স্বাগতম! 🚀 এখন আপনার এলাকার ড্রাইভার, ডাক্তারসহ যাবতীয় প্রয়োজনীয় সেবা পেয়ে যাবেন হাতের নাগালেই। 📲 প্রয়োজনীয় সেবা পেতে এখনই নিচে দেখুন! 👇✨",
+    titleBn: "'আমাদের এলাকা' অ্যাপে স্বাগতম 🏡",
+    textEn: "Find drivers, doctors, and essential local services right at your fingertips. 📲  Scroll down now! 👇",
+    textBn: "এখন আপনার এলাকার ড্রাইভার, ডাক্তারসহ যাবতীয় প্রয়োজনীয় সেবা পেয়ে যাবেন হাতের নাগালেই। 📲  এখনই নিচে দেখুন! 👇",
     date: "",
     urgent: false,
     link: "",
@@ -73,7 +73,7 @@ window.HOME_NOTICES = [
   {
     titleEn: "✨ Holy Shab-e-Meraj Notice 🌙",
     titleBn: "✨ পবিত্র শবে মেরাজ বিজ্ঞপ্তি 🌙",
-    textEn: "The holy Shab-e-Meraj will be observed on Tuesday night, January 5, 2027. Time remaining: [[timer:2027-01-05 17:45]]. 🤲 May this blessed night bring endless peace, divine blessings, and forgiveness to everyone. 🤍",
+    textEn: "The holy Shab-e-Meraj will be observed on Tuesday night, January 5, 2027. Time remaining: [[timer:2027-01-05 17:45]] 🤲 🤍",
     textBn: "আগামী ৫ জানুয়ারি, ২০২৭ মঙ্গলবার রাতে পবিত্র শবে মেরাজ পালিত হবে। 🌙 বরকতময় এই রাত আসতে আর মাত্র: [[timer:2027-01-05 17:45]] বাকি। 🤲 পবিত্র এই রাতে সবার সর্বাঙ্গীন মঙ্গল, শান্তি ও ক্ষমা প্রার্থনা করছি। 🤍",
     date: "05-01-2027",
     urgent: true,
@@ -81,19 +81,19 @@ window.HOME_NOTICES = [
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {
-    titleEn: "🩸 Modern Bloodless Circumcision 🩺",
-    titleBn: "🩺 আধুনিক মেশিনের সাহায্যে রক্তপাতহীন খতনা ✨",
-    textEn: "Dr. Sala Uddin at Bangla Bazar performs safe circumcision using a digital machine with no bleeding, no stitches, and no bandages. 🩹✨ Check the doctor's profile for full details and contact info.",
-    textBn: "বাংলা বাজারের ছালা উদ্দিন ডাক্তার এখন ডিজিটাল মেশিনের সাহায্যে সম্পূর্ণ রক্তপাতহীন, সেলাই ও ব্যান্ডেজবিহীন আধুনিক পদ্ধতিতে মুসলমানি (খতনা) করান। 🩺✨ বিস্তারিত জানতে ও যোগাযোগের জন্য ডাক্তারের প্রোফাইলটি দেখে নিন। 📱",
+    titleEn: "🩺 Modern Bloodless Circumcision🩸",
+    titleBn: "🩺 আধুনিক ভাবে রক্তপাতহীন খতনা 🩸",
+    textEn: "Dr. Sala Uddin at Bangla Bazar performs safe circumcision using a digital machine with no bleeding, no stitches, and no bandages. 🩹✨ click down for details... 👇",
+    textBn: "বাংলা বাজারের ছালা উদ্দিন ডাক্তার এখন ডিজিটাল মেশিনের সাহায্যে সম্পূর্ণ রক্তপাতহীন, সেলাই ও ব্যান্ডেজবিহীন আধুনিক পদ্ধতিতে মুসলমানি (খতনা) করান। 🩹✨ বিস্তারিত নিচে... 👇",
     date: "",
     urgent: false,
     link: "#/driver/DR1213",
     bgImage: "https://drive.google.com/file/d/16vtek6IELpey6VdJRngKvREFRPHAXCpL/view?usp=drivesdk"
   },
   {
-    titleEn: "🗳️ Choose Qualified & Honest Leaders 🤝",
+    titleEn: "📢 Follow Our Official Facebook Page",
     titleBn: "🗳️ যোগ্য ও সৎ জনপ্রতিনিধি নির্বাচন করুন 🤝",
-    textEn: "Upcoming local elections are around the corner! 🗳️ Since Union Members and Chairmen are the pillars of local development, choose based on personal character and qualifications, not party lines. ✨ Elect honest candidates to ensure true progress for our area. 🏡🙌",
+    textEn: "Stay updated with all news and services of 'Amader Elaka'! 🚀 Follow our official Facebook page for the latest updates, announcements, and support. Click below to connect with us! 📲✨",
     textBn: "আর কিছুদিন পরেই আসছে স্থানীয় মেম্বার ও চেয়ারম্যান নির্বাচন! 🗳️ যেহেতু মেম্বার ও চেয়ারম্যানগণ আমাদের এলাকার উন্নয়নের মূল ভিত্তি, তাই দল না দেখে প্রার্থীর সততা, মেধা ও গুণাবলী বিবেচনা করুন। ✨ এলাকার সঠিক উন্নয়নের জন্য যোগ্য মানুষকে ভোট দিয়ে জয়যুক্ত করুন। 🏡🙌",
     date: "",
     urgent: false,

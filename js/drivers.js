@@ -1225,7 +1225,7 @@
 
     function paintCategories() {
       categoryZone.innerHTML = "";
-      if (pickerOpen) return;
+      if (pickerOpen || !storedMarketSlug()) return;
       const items = Array.isArray(window.HOME_CATEGORIES) ? window.HOME_CATEGORIES : [];
       if (!items.length) return;
       const current = markets && markets.find((m) => m.slug === effectiveMarketSlug());

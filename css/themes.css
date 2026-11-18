@@ -1,0 +1,130 @@
+/**
+ * themes.css — design tokens (color, spacing, radius, shadow,
+ * type scale). Every other stylesheet consumes these variables
+ * instead of hard-coded values, so the two themes below are the
+ * only place color decisions are made.
+ */
+
+:root {
+  /* Type */
+  --font-family: "Hind Siliguri", "Noto Sans Bengali", -apple-system, "Segoe UI", sans-serif;
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2.25rem;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.55;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.75rem;
+  --space-8: 3.5rem;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  /* Layout */
+  --container-max: 1160px;
+  --header-height: 64px;
+
+  /* Shadow (used sparingly, never stacked on every card) */
+  --shadow-float: 0 12px 28px -14px rgba(15, 35, 25, 0.28);
+}
+
+/* ---------------------------------------------------------- */
+/* LIGHT THEME (default)                                      */
+/* ---------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  --color-bg: #F3F5EF;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-ink: #16231C;
+  --color-ink-soft: #48564C;
+  --color-line: #DCE1D6;
+  --color-line-strong: #C4CCBC;
+
+  --color-primary: #1F6E4A;
+  --color-primary-dark: #154D34;
+  --color-primary-soft: #E4F0E7;
+  --color-on-primary: #FFFFFF;
+
+  --color-accent: #E79B2E;
+  --color-accent-dark: #B87A1E;
+  --color-on-accent: #22180A;
+
+  --color-danger: #B23B24;
+  --color-danger-soft: #F7E4DE;
+  --color-success: #1F6E4A;
+
+  /* Subtle input-background tints (registration form field grouping only) */
+  --color-tint-a: #E4F0E7; /* pale green  - reuses primary-soft's hue */
+  --color-tint-b: #FBF1E0; /* pale amber */
+  --color-tint-c: #E6EDF6; /* pale blue */
+  --color-tint-d: #EDEAF3; /* pale lavender/neutral */
+
+  --color-focus-ring: #1667C7;
+  --color-overlay: rgba(15, 27, 20, 0.55);
+}
+
+/* ---------------------------------------------------------- */
+/* DARK THEME                                                  */
+/* ---------------------------------------------------------- */
+[data-theme="dark"] {
+  --color-bg: #101B15;
+  --color-surface: #172519;
+  --color-surface-raised: #1D2E20;
+  --color-ink: #EDF1E9;
+  --color-ink-soft: #AEBBA9;
+  --color-line: #2B3B2C;
+  --color-line-strong: #3B4E3C;
+
+  --color-primary: #4FAE7C;
+  --color-primary-dark: #2F7B54;
+  --color-primary-soft: #1D3626;
+  --color-on-primary: #0B140D;
+
+  --color-accent: #F2AE45;
+  --color-accent-dark: #C6871F;
+  --color-on-accent: #221806;
+
+  --color-danger: #E07354;
+  --color-danger-soft: #33231D;
+  --color-success: #4FAE7C;
+
+  /* Subtle input-background tints (registration form field grouping only) */
+  --color-tint-a: #1D3626;
+  --color-tint-b: #362E1B;
+  --color-tint-c: #1B2A38;
+  --color-tint-d: #2A2536;
+
+  --color-focus-ring: #6FB2F2;
+  --color-overlay: rgba(4, 8, 5, 0.7);
+
+  --shadow-float: 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://saiful-987-yu.github.io/amader-elaka/sitemap.xml

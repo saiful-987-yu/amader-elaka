@@ -1,0 +1,87 @@
+/**
+ * pwa.css — the "Install app" banner shown/hidden by js/pwa-install.js.
+ * Uses the same design tokens (css/themes.css) as the rest of the site,
+ * so it automatically matches both the light and dark theme.
+ */
+
+.pwa-install-banner {
+  position: fixed;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 60;
+  max-width: 460px;
+  margin: 0 auto;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  animation: pwa-banner-in var(--duration-base) var(--ease);
+}
+
+.pwa-install-banner[hidden] { display: none; }
+
+@keyframes pwa-banner-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pwa-install-banner__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-primary-soft);
+}
+.pwa-install-banner__icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.pwa-install-banner__body { flex: 1; min-width: 0; }
+.pwa-install-banner__title {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-ink);
+  margin-bottom: 2px;
+}
+.pwa-install-banner__text {
+  font-size: var(--font-size-xs);
+  color: var(--color-ink-soft);
+  line-height: var(--line-height-normal);
+}
+.pwa-install-banner__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.pwa-install-banner__actions .btn { padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); }
+
+.pwa-install-banner__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.pwa-install-banner__close:hover { background: var(--color-primary-soft); color: var(--color-ink); }
+.pwa-install-banner__close svg { width: 16px; height: 16px; }
+
+/* Update-ready mode uses the same shell, no icon column. */
+.pwa-install-banner--update .pwa-install-banner__icon { display: none; }
+
+@media (max-width: 480px) {
+  .pwa-install-banner {
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+  }
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 85" fill="none">
+  <path d="M42 22C42 18 45 15 50 15C55 15 58 18 58 22V25H63L60 25H40L37 25H42V22Z" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+  
+  <parth d="M40 46 67 26V26H34Z" stroke="#26b" stroke-width="2.5" fill="none"/> 
+
+  <path d="M37 25L39 23.8H61L63 25L61 26.2H39L37 25Z" fill="#8BC34A"/>
+  <path d="M35 25L37 23.8H63L65 25L63 26.2H37L35 25Z" fill="#8BC34A"/>
+  
+  <!--<rect x="37" y="25" width="26" height="25" rx="3" fill="#ffffff"/> -->
+<path d="M 50 48 C 45 26, 70 32, 75 26 C 75 26, 76 57, 50 48 Z" fill="#ffffff" />
+<path
+    d="M 49.8 48
+       C 52 45.8, 55.8 42, 59.2 37.8
+       C 61.6 34.8, 62.8 33, 62.2 31.8
+       C 61 32.8, 58.5 35.8, 55.2 39.8
+       C 52.8 42.8, 50.8 45.8, 49.8 48
+       Z"
+    fill="#0b5e28"/>
+  <!--<path opacity="0.3" d="M15 20H24L33 55H70L78 28H32" stroke="#67b620" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/> -->
+  <path d="M 30 63 L 66 63 L 70 55 L 33 55 L 25 25 L 15 22" stroke="#67b620" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <circle opacity="0.9" cx="36" cy="70" r="4" fill="#67b620"/>
+  <circle opacity="0.9" cx="61" cy="70" r="4" fill="#67b620"/>
+
+</svg>
